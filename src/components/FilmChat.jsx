@@ -64,7 +64,7 @@ export default function FilmChat({ messages, onChange, project }) {
   return <section className="film-chat-page">
     <header className="film-chat-heading">
       <div><div className="eyebrow">OZATROOM INTELLIGENCE / CREATIVE COPILOT</div><h1>AI <em>Director.</em></h1><p>Творческий помощник для разработки фильмов, сериалов, сценариев и кинематографических кадров.</p></div>
-      <div className="chat-model-status"><span className="chat-status-dot"/ > AI ENGINE <b>{endpoint ? "СЕРВЕР НАСТРОЕН" : "НУЖНО ПОДКЛЮЧИТЬ"}</b></div>
+      <div className="chat-model-status"><span className="chat-status-dot" /> AI ENGINE <b>{endpoint ? "СЕРВЕР НАСТРОЕН" : "НУЖНО ПОДКЛЮЧИТЬ"}</b></div>
     </header>
     <div className="film-chat-workspace">
       <div className="film-chat-top"><div className="chat-assistant-avatar">O.</div><div><strong>OZATROOM AI DIRECTOR</strong><small>{busy ? "AI Director готовит ответ..." : "Ваш помощник по кинопроизводству"}</small></div><button onClick={clear} title="Очистить историю">Очистить чат</button></div>
