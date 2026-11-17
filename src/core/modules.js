@@ -1,6 +1,7 @@
 export const MODULES = [
   { id: "overview", label: "Обзор", group: "workspace", status: "ready" },
   { id: "projects", label: "Мои проекты", group: "workspace", status: "ready" },
+  { id: "project-manager", label: "Управление проектом", group: "workspace", status: "ready" },
   { id: "storyboard", label: "Раскадровка", group: "production", status: "ready" },
   { id: "characters", label: "Персонажи", group: "production", status: "planned" },
   { id: "locations", label: "Локации", group: "production", status: "planned" },
