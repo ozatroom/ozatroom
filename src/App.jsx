@@ -4,6 +4,7 @@ import { normalizeWorkspace } from "./core/schema.js";
 import { MODULES } from "./core/modules.js";
 import ProjectManager from "./components/ProjectManager.jsx";
 import Characters from "./components/Characters.jsx";
+import FilmChat from "./components/FilmChat.jsx";
 
 const starterProjects = [
   { id: "last-route", title: "THE LAST ROUTE", type: "Сериал", genre: "Crime thriller · Adventure", status: "В работе", scenes: 12, updated: "17 ноября 2026", description: "Последний маршрут. История о дороге, которая меняет всё.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85" },
@@ -21,6 +22,7 @@ function App() {
   const [projects, setProjects] = useState(initialWorkspace.projects);
   const [storyboards, setStoryboards] = useState(initialWorkspace.storyboards);
   const [characters, setCharacters] = useState(() => readCollection("characters", "ozatroom-characters", []));
+  const [chatMessages, setChatMessages] = useState(() => readCollection("chat", "ozatroom-chat", []));
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Все проекты");
   const [modal, setModal] = useState(false);
@@ -34,6 +36,7 @@ function App() {
   const saveProjects = (next) => { setProjects(next); writeCollection("projects", next); };
   const saveBoards = (next) => { setStoryboards(next); writeCollection("storyboards", next); };
   const saveCharacters = (next) => { setCharacters(next); writeCollection("characters", next); };
+  const saveChat = (next) => { setChatMessages(next); writeCollection("chat", next); };
   const visible = useMemo(() => projects.filter(p => (p.title + " " + p.genre).toLowerCase().includes(query.toLowerCase()) && (filter === "Все проекты" || p.type.toLowerCase().includes(filter.toLowerCase()))), [projects, query, filter]);
   const currentProject = projects.find(p => p.id === activeProject?.id) || projects[0];
   const scenes = currentProject ? (storyboards[currentProject.id] || []) : [];
@@ -79,7 +82,8 @@ function App() {
         <button className={activeModule === "project-manager" ? "nav-item active" : "nav-item"} onClick={() => openProjectManager()}><Icon>▣</Icon> Мои проекты <span className="nav-count">{projects.length}</span></button>
         <button className={activeModule === "storyboard" ? "nav-item active" : "nav-item"} onClick={() => openStoryboard()}><Icon>▤</Icon> Раскадровка</button>
         <button className={activeModule === "characters" ? "nav-item active" : "nav-item"} onClick={() => setActiveModule("characters")}><Icon>♙</Icon> Персонажи <span className="nav-count">{characters.length}</span></button>
-        <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Prompt Studio — следующий этап разработки."); }}><Icon>✧</Icon> Prompt Studio</button>
+        <button className={activeModule === "ai-chat" ? "nav-item active" : "nav-item"} onClick={() => setActiveModule("ai-chat")}><Icon>✧</Icon> AI Director <span className="nav-count">AI</span></button>
+        <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Prompt Studio — следующий этап разработки."); }}><Icon>⌘</Icon> Prompt Studio</button>
         <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Медиатека — следующий этап разработки."); }}><Icon>▧</Icon> Медиатека</button>
       </nav>
       <div className="sidebar-bottom"><div className="storage-card"><div className="storage-top"><span>ЛОКАЛЬНОЕ ХРАНИЛИЩЕ</span><span className="green-dot"/></div><strong>Ваши проекты</strong><p>Данные сохраняются в этом браузере.</p><div className="storage-line"><i/></div><small>Бесплатный режим · MVP</small></div><div className="profile"><div className="avatar">O</div><div><strong>OZATROOM</strong><small>Creator workspace</small></div><span className="profile-dots">•••</span></div></div>
@@ -95,7 +99,7 @@ function App() {
         </div>
         <div className="studio-toolbar-end"><span className="studio-save-indicator"><i/> Сохранено локально</span>{activeModule === "storyboard" && <button className="studio-add-scene" onClick={addScene}>＋ Сцена</button>}</div>
       </div>
-      {activeModule === "characters" ? <Characters characters={characters} onChange={saveCharacters}/> : activeModule === "project-manager" ? <ProjectManager project={currentProject} onUpdate={updateProject} onStoryboard={() => openStoryboard(currentProject)}/> : activeModule === "storyboard" ? <section className="storyboard-page">
+      {activeModule === "ai-chat" ? <FilmChat messages={chatMessages} onChange={saveChat} project={currentProject}/> : activeModule === "characters" ? <Characters characters={characters} onChange={saveCharacters}/> : activeModule === "project-manager" ? <ProjectManager project={currentProject} onUpdate={updateProject} onStoryboard={() => openStoryboard(currentProject)}/> : activeModule === "storyboard" ? <section className="storyboard-page">
         <div className="storyboard-heading"><div><div className="eyebrow">PRE-PRODUCTION / SHOT PLANNING</div><h1>Раскадровка <em>проекта.</em></h1><p>Разложите историю на сцены и подготовьте каждый кадр к производству.</p></div><button className="primary-btn" onClick={addScene}>＋ Добавить сцену</button></div>
         <div className="storyboard-toolbar"><label>Проект<select value={currentProject?.id || ""} onChange={e => { const p = projects.find(x => x.id === e.target.value); setActiveProject(p); setSelectedScene(storyboards[p?.id]?.[0]?.id || null); }} >{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><div className="scene-total"><strong>{scenes.length.toString().padStart(2,"0")}</strong><span>СЦЕН В РАСКАДРОВКЕ</span></div></div>
         <div className="storyboard-layout">
