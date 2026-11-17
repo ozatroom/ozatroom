@@ -7,3 +7,57 @@
 /* STORYBOARD WORKSPACE */
 .storyboard-page{padding:38px 0 20px}.storyboard-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}.storyboard-heading h1,.placeholder-page h1{font-size:32px;letter-spacing:-1.2px;font-weight:600;margin:12px 0 8px}.storyboard-heading h1 em{font-style:normal;color:#c8aa7e}.storyboard-heading p,.placeholder-page p{font-size:11px;color:#999;line-height:1.7;margin:0}.storyboard-toolbar{display:flex;align-items:end;justify-content:space-between;padding:16px 18px;background:#191a1d;border:1px solid #303135;border-radius:9px;margin-bottom:15px}.storyboard-toolbar label,.editor-fields label{font-size:10px;color:#aaa;display:block}.storyboard-toolbar select,.editor-fields input,.editor-fields select,.editor-fields textarea{display:block;width:100%;margin-top:8px;background:#111215;border:1px solid #3b3c40;color:#eee;border-radius:6px;padding:11px;outline:none;font:11px Manrope,Arial,sans-serif}.storyboard-toolbar select{min-width:240px}.editor-fields input:focus,.editor-fields select:focus,.editor-fields textarea:focus,.storyboard-toolbar select:focus{border-color:#c5a77b}.scene-total{text-align:right;display:flex;flex-direction:column;gap:3px}.scene-total strong{font-size:21px}.scene-total span{font:8px 'DM Mono';letter-spacing:1px;color:#85827c}.storyboard-layout{display:grid;grid-template-columns:minmax(220px, .75fr) minmax(0,2fr);gap:15px;align-items:start}.scene-list,.scene-editor{background:#191a1d;border:1px solid #303135;border-radius:9px;overflow:hidden}.scene-list-head{padding:16px;border-bottom:1px solid #303135;display:flex;justify-content:space-between;font:9px 'DM Mono';letter-spacing:1px;color:#aaa}.scene-list-head span{color:#c5a77b}.scene-list-item{width:100%;display:flex;align-items:center;gap:11px;text-align:left;padding:13px 14px;background:transparent;border:0;border-bottom:1px solid #2c2d30;color:#eee}.scene-list-item.selected{background:#292622;box-shadow:inset 2px 0 #c5a77b}.scene-number{font:10px 'DM Mono';color:#c5a77b}.scene-list-item b{display:block;font-size:10px;font-weight:600}.scene-list-item small{display:block;color:#85827c;font-size:8px;margin-top:5px}.scene-list-item i{font-style:normal;margin-left:auto;color:#777}.scene-add{width:calc(100% - 28px);margin:14px;border:1px dashed #51483b;background:transparent;color:#c5a77b;border-radius:6px;padding:10px;font-size:10px}.scene-empty{padding:25px 16px;color:#85827c;font-size:10px;line-height:1.7;text-align:center}.scene-editor{padding:22px}.editor-top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #303135;padding-bottom:17px;margin-bottom:20px}.editor-top h2{font-size:17px;margin:7px 0 0}.delete-scene{border:1px solid #493638;background:transparent;color:#c88e8e;border-radius:5px;padding:8px 10px;font-size:9px}.editor-fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}.editor-fields .field-wide{grid-column:1/-1}.editor-fields textarea{resize:vertical;min-height:62px;line-height:1.6}.editor-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #303135;margin-top:20px;padding-top:17px}.editor-actions>span{font-size:9px;color:#85827c}.editor-actions i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#85a58c;margin-right:7px}.no-scene{text-align:center;padding:70px 15px}.no-scene>div{font-size:30px;color:#c5a77b}.no-scene h2{font-size:18px}.no-scene p{font-size:10px;color:#888;margin-bottom:20px}.placeholder-page{padding:80px 0}.toast{position:fixed;right:24px;bottom:24px;z-index:20;background:#292622;border:1px solid #76664f;color:#eee;border-radius:8px;padding:13px 16px;font-size:11px;box-shadow:0 10px 40px #0008}.toast button{border:0;background:transparent;color:#aaa;margin-left:18px;font-size:16px}
 @media(max-width:760px){.storyboard-page{padding-top:24px}.storyboard-heading{align-items:flex-start;flex-direction:column}.storyboard-heading h1{font-size:26px}.storyboard-heading .primary-btn{width:100%;justify-content:center}.storyboard-toolbar{align-items:stretch;gap:15px;flex-direction:column}.storyboard-toolbar select{min-width:0}.scene-total{text-align:left}.storyboard-layout{grid-template-columns:1fr}.scene-list{max-height:260px;overflow:auto}.scene-editor{padding:16px}.editor-fields{grid-template-columns:1fr;gap:12px}.editor-fields .field-wide{grid-column:auto}.editor-top{align-items:flex-start}.editor-actions{align-items:stretch;flex-direction:column}.editor-actions .primary-btn{justify-content:center}.placeholder-page{padding:45px 0}.storyboard-heading p{max-width:100%}}
+
+
+/* PROJECT MANAGER */
+.project-manager-page{padding:36px 0 24px}
+.pm-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}
+.pm-heading h1{font-size:32px;letter-spacing:-1.2px;margin:11px 0 7px;font-weight:650}
+.pm-heading p,.pm-panel-heading p{font-size:11px;color:#999;line-height:1.7;margin:0}
+.pm-overview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.pm-stat,.pm-panel{background:#191a1d;border:1px solid #303135;border-radius:9px}
+.pm-stat{padding:15px 17px}
+.pm-stat span{display:block;color:#898781;font:8px 'DM Mono';letter-spacing:1.2px}
+.pm-stat strong{display:block;font-size:19px;margin-top:9px;font-weight:600}
+.pm-panel{padding:21px;margin-bottom:16px}
+.pm-panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
+.pm-panel-heading h2{font-size:17px;margin:7px 0 5px}
+.pm-save-state{font-size:9px;color:#8caa91;white-space:nowrap}
+.pm-save-state i{display:inline-block;width:6px;height:6px;background:#85a58c;border-radius:50%;margin-right:6px}
+.pm-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pm-fields label,.pm-episode-editor label{display:block;font-size:10px;color:#aaa}
+.pm-fields input,.pm-fields select,.pm-fields textarea,.pm-episode-editor input,.pm-episode-editor select,.pm-episode-editor textarea,.pm-season-title input{display:block;width:100%;margin-top:8px;background:#111215;border:1px solid #3b3c40;color:#eee;border-radius:6px;padding:11px;outline:none;font:11px Manrope,Arial,sans-serif}
+.pm-fields input:focus,.pm-fields select:focus,.pm-fields textarea:focus,.pm-episode-editor input:focus,.pm-episode-editor select:focus,.pm-episode-editor textarea:focus,.pm-season-title input:focus{border-color:#c5a77b}
+.pm-fields textarea,.pm-episode-editor textarea{resize:vertical;line-height:1.6}
+.pm-wide{grid-column:1/-1}
+.outline-btn{border:1px solid #5a4d3c;background:#24211d;color:#d5b98f;border-radius:6px;padding:10px 13px;font-size:10px;white-space:nowrap}
+.pm-empty{padding:32px 15px;text-align:center;border:1px dashed #454347;border-radius:8px}
+.pm-empty>span{font-size:25px;color:#c5a77b}
+.pm-empty strong{display:block;font-size:12px;margin:9px 0}
+.pm-empty p,.pm-production-note p,.pm-episode-empty p{font-size:10px;line-height:1.7;color:#8f8c86;margin:0 auto 16px;max-width:430px}
+.pm-season-layout{display:grid;grid-template-columns:minmax(170px,.65fr) minmax(0,2fr);gap:15px}
+.pm-season-list,.pm-episode-list{background:#151619;border:1px solid #303135;border-radius:7px;padding:7px;align-self:start}
+.pm-season-item{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:12px 9px;border:0;border-bottom:1px solid #2b2c30;background:transparent;color:#eee}
+.pm-season-item.selected,.pm-episode-item.selected{background:#292622;box-shadow:inset 2px 0 #c5a77b}
+.pm-season-number{font:10px 'DM Mono';color:#c5a77b}
+.pm-season-item b,.pm-season-item small{display:block}
+.pm-season-item b{font-size:10px}
+.pm-season-item small{font-size:8px;color:#85827c;margin-top:4px}
+.pm-season-item i{font-style:normal;margin-left:auto;color:#777}
+.pm-season-title{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.pm-season-title input{margin:0;max-width:280px}
+.pm-episode-layout{display:grid;grid-template-columns:minmax(145px,.7fr) minmax(0,1.5fr);gap:13px}
+.pm-episode-item{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;background:transparent;border:0;border-bottom:1px solid #2b2c30;padding:11px 9px;color:#eee}
+.pm-episode-item span{font:8px 'DM Mono';color:#c5a77b}
+.pm-episode-item b{font-size:10px}
+.pm-episode-item small{font-size:8px;color:#85827c}
+.pm-episode-editor{background:#151619;border:1px solid #303135;border-radius:7px;padding:15px;display:grid;gap:13px;align-content:start}
+.pm-episode-editor-top{display:flex;align-items:center;justify-content:space-between}
+.pm-fields-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pm-fields-inline label{min-width:0}
+.pm-episode-empty{min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:1px dashed #454347;border-radius:7px;padding:15px}
+.pm-episode-empty strong{font-size:11px;margin-bottom:8px}
+.pm-production-note h2{font-size:16px;margin:8px 0}
+.pm-production-note p{margin:0 0 16px}
+@media(max-width:900px){.pm-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-season-layout{grid-template-columns:1fr}.pm-season-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.project-manager-page{padding-top:23px}.pm-heading{align-items:flex-start;flex-direction:column}.pm-heading h1{font-size:25px;overflow-wrap:anywhere}.pm-heading>.primary-btn{width:100%;justify-content:center}.pm-panel{padding:15px}.pm-panel-heading{flex-direction:column}.pm-panel-heading>.outline-btn{width:100%}.pm-fields{grid-template-columns:1fr}.pm-wide{grid-column:auto}.pm-season-list{grid-template-columns:1fr}.pm-episode-layout{grid-template-columns:1fr}.pm-episode-list{max-height:220px;overflow:auto}.pm-season-title{align-items:stretch;flex-direction:column}.pm-season-title input{max-width:none}.pm-season-title .delete-scene{align-self:flex-start}.pm-fields-inline{grid-template-columns:1fr}.pm-save-state{display:none}}
