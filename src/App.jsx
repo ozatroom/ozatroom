@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { readCollection, writeCollection } from "./core/storage.js";
+import { normalizeWorkspace } from "./core/schema.js";
+import { MODULES } from "./core/modules.js";
 
 const starterProjects = [
   { id: "last-route", title: "THE LAST ROUTE", type: "Сериал", genre: "Crime thriller · Adventure", status: "В работе", scenes: 12, updated: "17 ноября 2026", description: "Последний маршрут. История о дороге, которая меняет всё.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85" },
@@ -9,8 +12,12 @@ const emptyScene = (number) => ({ id: crypto.randomUUID(), number, title: "Но�
 const Icon = ({ children }) => <span className="icon" aria-hidden="true">{children}</span>;
 
 function App() {
-  const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem("ozatroom-projects")) || starterProjects; } catch { return starterProjects; } });
-  const [storyboards, setStoryboards] = useState(() => { try { return JSON.parse(localStorage.getItem("ozatroom-storyboards")) || {}; } catch { return {}; } });
+  const [initialWorkspace] = useState(() => normalizeWorkspace({
+    projects: readCollection("projects", "ozatroom-projects", starterProjects),
+    storyboards: readCollection("storyboards", "ozatroom-storyboards", {})
+  }));
+  const [projects, setProjects] = useState(initialWorkspace.projects);
+  const [storyboards, setStoryboards] = useState(initialWorkspace.storyboards);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Все проекты");
   const [modal, setModal] = useState(false);
@@ -21,8 +28,8 @@ function App() {
   const [selectedScene, setSelectedScene] = useState(null);
   const [notice, setNotice] = useState("");
 
-  const saveProjects = (next) => { setProjects(next); localStorage.setItem("ozatroom-projects", JSON.stringify(next)); };
-  const saveBoards = (next) => { setStoryboards(next); localStorage.setItem("ozatroom-storyboards", JSON.stringify(next)); };
+  const saveProjects = (next) => { setProjects(next); writeCollection("projects", next); };
+  const saveBoards = (next) => { setStoryboards(next); writeCollection("storyboards", next); };
   const visible = useMemo(() => projects.filter(p => (p.title + " " + p.genre).toLowerCase().includes(query.toLowerCase()) && (filter === "Все проекты" || p.type.toLowerCase().includes(filter.toLowerCase()))), [projects, query, filter]);
   const currentProject = projects.find(p => p.id === activeProject?.id) || projects[0];
   const scenes = currentProject ? (storyboards[currentProject.id] || []) : [];
