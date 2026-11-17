@@ -10,7 +10,20 @@ export function normalizeProject(project = {}) {
     scenes: Number.isFinite(Number(project.scenes)) ? Number(project.scenes) : 0,
     updated: project.updated || "—",
     description: project.description || "",
-    image: project.image || ""
+    image: project.image || "",
+    seasons: Array.isArray(project.seasons) ? project.seasons.map((season, index) => ({
+      id: season.id || crypto.randomUUID(),
+      number: Number(season.number) || index + 1,
+      title: season.title || `Сезон ${index + 1}`,
+      episodes: Array.isArray(season.episodes) ? season.episodes.map((episode, episodeIndex) => ({
+        id: episode.id || crypto.randomUUID(),
+        number: Number(episode.number) || episodeIndex + 1,
+        title: episode.title || `Эпизод ${episodeIndex + 1}`,
+        status: episode.status || "Планируется",
+        summary: episode.summary || "",
+        duration: episode.duration || ""
+      })) : []
+    })) : []
   };
 }
 
