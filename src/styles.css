@@ -61,3 +61,23 @@
 .pm-production-note p{margin:0 0 16px}
 @media(max-width:900px){.pm-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-season-layout{grid-template-columns:1fr}.pm-season-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.project-manager-page{padding-top:23px}.pm-heading{align-items:flex-start;flex-direction:column}.pm-heading h1{font-size:25px;overflow-wrap:anywhere}.pm-heading>.primary-btn{width:100%;justify-content:center}.pm-panel{padding:15px}.pm-panel-heading{flex-direction:column}.pm-panel-heading>.outline-btn{width:100%}.pm-fields{grid-template-columns:1fr}.pm-wide{grid-column:auto}.pm-season-list{grid-template-columns:1fr}.pm-episode-layout{grid-template-columns:1fr}.pm-episode-list{max-height:220px;overflow:auto}.pm-season-title{align-items:stretch;flex-direction:column}.pm-season-title input{max-width:none}.pm-season-title .delete-scene{align-self:flex-start}.pm-fields-inline{grid-template-columns:1fr}.pm-save-state{display:none}}
+
+
+/* STUDIO WORKSPACE SHELL — browser-first production UI */
+.studio-toolbar{min-height:58px;display:flex;align-items:center;gap:22px;padding:9px 30px;background:#151619;border-bottom:1px solid #292a2e;position:sticky;top:0;z-index:2}
+.studio-context{display:flex;align-items:center;gap:10px;min-width:190px}
+.studio-context-label{font:8px 'DM Mono';letter-spacing:1.1px;color:#77766f;white-space:nowrap}
+.studio-context select{max-width:210px;min-width:0;background:#202125;border:1px solid #37383d;border-radius:5px;color:#eee;padding:8px 27px 8px 10px;font-size:10px;outline:none}
+.studio-context select:focus{border-color:#b99a6a}
+.studio-tool-tabs{display:flex;align-items:center;gap:4px;min-width:0}
+.studio-tool{display:flex;align-items:center;gap:8px;border:1px solid transparent;border-radius:5px;padding:9px 12px;background:transparent;color:#93928e;font-size:11px;white-space:nowrap}
+.studio-tool:hover{background:#202125;color:#eee}
+.studio-tool.active{background:#292622;border-color:#514636;color:#e0c49a}
+.studio-toolbar-end{margin-left:auto;display:flex;align-items:center;gap:14px}
+.studio-save-indicator{font:8px 'DM Mono';color:#8b9c8d;white-space:nowrap}
+.studio-save-indicator i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#8aa58d;margin-right:7px}
+.studio-add-scene{border:1px solid #796447;background:#b99a6a;color:#171513;border-radius:5px;padding:9px 12px;font-size:10px;font-weight:700;white-space:nowrap}
+.main{padding-top:0}
+.topbar{position:relative}
+@media(max-width:900px){.studio-toolbar{padding:9px 20px;gap:12px}.studio-context{min-width:0}.studio-context-label{display:none}.studio-context select{max-width:160px}.studio-save-indicator{display:none}}
+@media(max-width:760px){.studio-toolbar{position:relative;top:auto;flex-wrap:wrap;padding:9px 14px;gap:8px}.studio-context{width:100%}.studio-context select{width:100%;max-width:none}.studio-tool-tabs{width:100%;overflow-x:auto}.studio-tool{flex:1;justify-content:center;padding:9px 7px;font-size:10px}.studio-toolbar-end{position:absolute;right:14px;top:12px}.studio-toolbar-end .studio-add-scene{padding:7px 9px}.studio-save-indicator{display:none}}
