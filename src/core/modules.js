@@ -3,7 +3,7 @@ export const MODULES = [
   { id: "projects", label: "Мои проекты", group: "workspace", status: "ready" },
   { id: "project-manager", label: "Управление проектом", group: "workspace", status: "ready" },
   { id: "storyboard", label: "Раскадровка", group: "production", status: "ready" },
-  { id: "characters", label: "Персонажи", group: "production", status: "planned" },
+  { id: "characters", label: "Персонажи", group: "production", status: "ready" },
   { id: "locations", label: "Локации", group: "production", status: "planned" },
   { id: "script", label: "Сценарий", group: "production", status: "planned" },
   { id: "prompts", label: "Prompt Studio", group: "production", status: "planned" },
