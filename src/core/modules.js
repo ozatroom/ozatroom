@@ -4,6 +4,7 @@ export const MODULES = [
   { id: "project-manager", label: "Управление проектом", group: "workspace", status: "ready" },
   { id: "storyboard", label: "Раскадровка", group: "production", status: "ready" },
   { id: "characters", label: "Персонажи", group: "production", status: "ready" },
+  { id: "ai-chat", label: "AI Director", group: "workspace", status: "ready" },
   { id: "locations", label: "Локации", group: "production", status: "planned" },
   { id: "script", label: "Сценарий", group: "production", status: "planned" },
   { id: "prompts", label: "Prompt Studio", group: "production", status: "planned" },
