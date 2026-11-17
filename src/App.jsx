@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { readCollection, writeCollection } from "./core/storage.js";
 import { normalizeWorkspace } from "./core/schema.js";
 import { MODULES } from "./core/modules.js";
+import ProjectManager from "./components/ProjectManager.jsx";
 
 const starterProjects = [
   { id: "last-route", title: "THE LAST ROUTE", type: "Сериал", genre: "Crime thriller · Adventure", status: "В работе", scenes: 12, updated: "17 ноября 2026", description: "Последний маршрут. История о дороге, которая меняет всё.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85" },
@@ -39,7 +40,7 @@ function App() {
   function createProject(e) {
     e.preventDefault(); if (!newTitle.trim()) return;
     const project = { id: crypto.randomUUID(), title: newTitle.trim().toUpperCase(), type: newType, genre: "Жанр не выбран", status: "Идея", scenes: 0, updated: "Только что", description: "Новый кинопроект OZATROOM.", image: "" };
-    saveProjects([project, ...projects]); setNewTitle(""); setModal(false); setActiveProject(project);
+    saveProjects([project, ...projects]); setNewTitle(""); setModal(false); setActiveProject(project); setActiveModule("project-manager");
   }
   function addScene() {
     if (!currentProject) return;
@@ -62,6 +63,8 @@ function App() {
     if (!currentScene?.prompt) return;
     try { await navigator.clipboard.writeText(currentScene.prompt); setNotice("Промпт скопирован"); setTimeout(() => setNotice(""), 1800); } catch { setNotice("Не удалось скопировать"); }
   }
+  const updateProject = (updated) => saveProjects(projects.map((project) => project.id === updated.id ? updated : project));
+  const openProjectManager = (project = currentProject) => { setActiveProject(project); setActiveModule("project-manager"); };
   const openStoryboard = (project = currentProject) => { setActiveProject(project); setActiveModule("storyboard"); setSelectedScene(storyboards[project?.id]?.[0]?.id || null); };
 
   return <div className="app-shell">
@@ -70,7 +73,7 @@ function App() {
       <div className="workspace-label">WORKSPACE</div>
       <nav>
         <button className={activeModule === "overview" ? "nav-item active" : "nav-item"} onClick={() => setActiveModule("overview")}><Icon>▦</Icon> Обзор</button>
-        <button className="nav-item" onClick={() => { setActiveModule("overview"); setFilter("Все проекты"); }}><Icon>▣</Icon> Мои проекты <span className="nav-count">{projects.length}</span></button>
+        <button className={activeModule === "project-manager" ? "nav-item active" : "nav-item"} onClick={() => openProjectManager()}><Icon>▣</Icon> Мои проекты <span className="nav-count">{projects.length}</span></button>
         <button className={activeModule === "storyboard" ? "nav-item active" : "nav-item"} onClick={() => openStoryboard()}><Icon>▤</Icon> Раскадровка</button>
         <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Модуль персонажей — следующий этап разработки."); }}><Icon>♙</Icon> Персонажи</button>
         <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Prompt Studio — следующий этап разработки."); }}><Icon>✧</Icon> Prompt Studio</button>
@@ -80,7 +83,7 @@ function App() {
     </aside>
     <main className="main">
       <header className="topbar"><div className="breadcrumb">WORKSPACE <span>/</span> <b>{activeModuleInfo?.label?.toUpperCase() || "ОБЗОР"}</b></div><div className="top-actions"><span className="system-status"><i/> Автосохранение включено</span><button className="help-btn" onClick={() => setNotice("OZATROOM AI FILM STUDIO — рабочее пространство для кинопроизводства.")}>? <span>Помощь</span></button></div></header>
-      {activeModule === "storyboard" ? <section className="storyboard-page">
+      {activeModule === "project-manager" ? <ProjectManager project={currentProject} onUpdate={updateProject} onStoryboard={() => openStoryboard(currentProject)}/> : activeModule === "storyboard" ? <section className="storyboard-page">
         <div className="storyboard-heading"><div><div className="eyebrow">PRE-PRODUCTION / SHOT PLANNING</div><h1>Раскадровка <em>проекта.</em></h1><p>Разложите историю на сцены и подготовьте каждый кадр к производству.</p></div><button className="primary-btn" onClick={addScene}>＋ Добавить сцену</button></div>
         <div className="storyboard-toolbar"><label>Проект<select value={currentProject?.id || ""} onChange={e => { const p = projects.find(x => x.id === e.target.value); setActiveProject(p); setSelectedScene(storyboards[p?.id]?.[0]?.id || null); }} >{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><div className="scene-total"><strong>{scenes.length.toString().padStart(2,"0")}</strong><span>СЦЕН В РАСКАДРОВКЕ</span></div></div>
         <div className="storyboard-layout">
@@ -103,7 +106,7 @@ function App() {
       </section> : activeModule === "placeholder" ? <section className="placeholder-page"><div className="eyebrow">COMING NEXT</div><h1>Модуль в разработке.</h1><p>{notice || "Этот инструмент появится в следующих этапах OZATROOM AI FILM STUDIO."}</p><button className="primary-btn" onClick={() => setActiveModule("overview")}>Вернуться к проектам</button></section> : <>
         <section className="welcome"><div><div className="eyebrow"><span/> YOUR CREATIVE PRODUCTION SPACE</div><h1>Каждая большая история<br/><em>начинается здесь.</em></h1><p>От первой идеи до финального кадра. Всё кинопроизводство — в одном пространстве.</p><button className="primary-btn" onClick={() => setModal(true)}><span>＋</span> Создать проект</button></div><div className="welcome-art"><div className="art-orbit orbit-one"/><div className="art-orbit orbit-two"/><div className="art-core"><span>O.</span><small>DIRECTOR'S SPACE</small></div><div className="art-tag tag-one">01 / STORY</div><div className="art-tag tag-two">02 / FRAME</div><div className="art-tag tag-three">03 / CINEMA</div></div></section>
         <section className="stats"><div className="stat"><span>ВСЕ ПРОЕКТЫ</span><strong>{projects.length.toString().padStart(2,"0")}</strong><small>В вашей библиотеке</small></div><div className="stat"><span>СЦЕНЫ</span><strong>{projects.reduce((a,p)=>a+(p.scenes||0),0).toString().padStart(2,"0")}</strong><small>Во всех проектах</small></div><div className="stat"><span>В РАБОТЕ</span><strong>{projects.filter(p=>p.status==="В работе").length.toString().padStart(2,"0")}</strong><small>Активные проекты</small></div><div className="stat stat-note"><span>СЛЕДУЮЩИЙ ШАГ</span><strong>AI DIRECTOR <b>↗</b></strong><small>Скоро в рабочем пространстве</small></div></section>
-        <section className="projects-section"><div className="section-heading"><div><div className="eyebrow">YOUR LIBRARY</div><h2>Мои проекты <span>{projects.length}</span></h2></div><button className="text-btn" onClick={() => setModal(true)}>＋ Новый проект</button></div><div className="project-tools"><div className="filters">{["Все проекты","Фильм","Сериал"].map(f=><button key={f} className={filter===f?"filter active-filter":"filter"} onClick={()=>setFilter(f)}>{f}</button>)}</div><label className="search"><Icon>⌕</Icon><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Поиск проектов..."/><kbd>⌘ K</kbd></label></div><div className="project-grid">{visible.map(p=><article className="project-card" key={p.id} onClick={()=>{setActiveProject(p);openStoryboard(p);}}><div className={"project-cover "+(!p.image?"no-image":"")} style={p.image?{backgroundImage:"linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.55)),url("+p.image+")"}:{}}><span className="project-type">{p.type}</span><span className="cover-title">{p.title}</span>{!p.image&&<div className="cover-placeholder">O.</div>}</div><div className="project-info"><div className="project-meta"><span className={"status "+(p.status==="В работе"?"in-progress":"")}>{p.status}</span><span>{p.updated}</span></div><p>{p.description}</p><div className="project-footer"><span><Icon>▤</Icon> {storyboards[p.id]?.length || p.scenes || 0} сцен</span><span className="open-project">Открыть проект ↗</span></div></div></article>)}{visible.length===0&&<div className="empty-state">Проекты не найдены. Попробуйте изменить запрос или создайте новый проект.</div>}<button className="add-card" onClick={()=>setModal(true)}><span>＋</span><strong>Создать новый проект</strong><small>Начните новую историю с чистого листа</small></button></div></section>
+        <section className="projects-section"><div className="section-heading"><div><div className="eyebrow">YOUR LIBRARY</div><h2>Мои проекты <span>{projects.length}</span></h2></div><button className="text-btn" onClick={() => setModal(true)}>＋ Новый проект</button></div><div className="project-tools"><div className="filters">{["Все проекты","Фильм","Сериал"].map(f=><button key={f} className={filter===f?"filter active-filter":"filter"} onClick={()=>setFilter(f)}>{f}</button>)}</div><label className="search"><Icon>⌕</Icon><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Поиск проектов..."/><kbd>⌘ K</kbd></label></div><div className="project-grid">{visible.map(p=><article className="project-card" key={p.id} onClick={()=>openProjectManager(p)}><div className={"project-cover "+(!p.image?"no-image":"")} style={p.image?{backgroundImage:"linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.55)),url("+p.image+")"}:{}}><span className="project-type">{p.type}</span><span className="cover-title">{p.title}</span>{!p.image&&<div className="cover-placeholder">O.</div>}</div><div className="project-info"><div className="project-meta"><span className={"status "+(p.status==="В работе"?"in-progress":"")}>{p.status}</span><span>{p.updated}</span></div><p>{p.description}</p><div className="project-footer"><span><Icon>▤</Icon> {storyboards[p.id]?.length || p.scenes || 0} сцен</span><span className="open-project">Открыть проект ↗</span></div></div></article>)}{visible.length===0&&<div className="empty-state">Проекты не найдены. Попробуйте изменить запрос или создайте новый проект.</div>}<button className="add-card" onClick={()=>setModal(true)}><span>＋</span><strong>Создать новый проект</strong><small>Начните новую историю с чистого листа</small></button></div></section>
       </>}
       <footer><span>© 2026 OZATROOM AI FILM STUDIO</span><span>MADE FOR STORYTELLERS <b>✳</b></span></footer>
     </main>
