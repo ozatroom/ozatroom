@@ -34,6 +34,7 @@ function App() {
   const currentProject = projects.find(p => p.id === activeProject?.id) || projects[0];
   const scenes = currentProject ? (storyboards[currentProject.id] || []) : [];
   const currentScene = scenes.find(s => s.id === selectedScene) || scenes[0] || null;
+  const activeModuleInfo = MODULES.find(module => module.id === activeModule);
 
   function createProject(e) {
     e.preventDefault(); if (!newTitle.trim()) return;
@@ -78,7 +79,7 @@ function App() {
       <div className="sidebar-bottom"><div className="storage-card"><div className="storage-top"><span>ЛОКАЛЬНОЕ ХРАНИЛИЩЕ</span><span className="green-dot"/></div><strong>Ваши проекты</strong><p>Данные сохраняются в этом браузере.</p><div className="storage-line"><i/></div><small>Бесплатный режим · MVP</small></div><div className="profile"><div className="avatar">O</div><div><strong>OZATROOM</strong><small>Creator workspace</small></div><span className="profile-dots">•••</span></div></div>
     </aside>
     <main className="main">
-      <header className="topbar"><div className="breadcrumb">WORKSPACE <span>/</span> <b>{activeModule === "storyboard" ? "РАСКАДРОВКА" : "ОБЗОР"}</b></div><div className="top-actions"><span className="system-status"><i/> Автосохранение включено</span><button className="help-btn" onClick={() => setNotice("OZATROOM AI FILM STUDIO — рабочее пространство для кинопроизводства.")}>? <span>Помощь</span></button></div></header>
+      <header className="topbar"><div className="breadcrumb">WORKSPACE <span>/</span> <b>{activeModuleInfo?.label?.toUpperCase() || "ОБЗОР"}</b></div><div className="top-actions"><span className="system-status"><i/> Автосохранение включено</span><button className="help-btn" onClick={() => setNotice("OZATROOM AI FILM STUDIO — рабочее пространство для кинопроизводства.")}>? <span>Помощь</span></button></div></header>
       {activeModule === "storyboard" ? <section className="storyboard-page">
         <div className="storyboard-heading"><div><div className="eyebrow">PRE-PRODUCTION / SHOT PLANNING</div><h1>Раскадровка <em>проекта.</em></h1><p>Разложите историю на сцены и подготовьте каждый кадр к производству.</p></div><button className="primary-btn" onClick={addScene}>＋ Добавить сцену</button></div>
         <div className="storyboard-toolbar"><label>Проект<select value={currentProject?.id || ""} onChange={e => { const p = projects.find(x => x.id === e.target.value); setActiveProject(p); setSelectedScene(storyboards[p?.id]?.[0]?.id || null); }} >{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><div className="scene-total"><strong>{scenes.length.toString().padStart(2,"0")}</strong><span>СЦЕН В РАСКАДРОВКЕ</span></div></div>
