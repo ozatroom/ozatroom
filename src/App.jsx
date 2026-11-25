@@ -6,7 +6,7 @@ import { Grid, OrbitControls, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 import {
   Box, Circle, Cylinder, Grid3X3, Layers3, Move, Rotate3D, Scaling,
-  Save, FolderOpen, Plus, Trash2, Copy, Eye, EyeOff, Camera,
+  Save, FolderOpen, Plus, Trash2, Copy, Eye, EyeOff, Camera, FileText,
   ChevronDown, MousePointer2, Settings2, Film, Clapperboard, Sparkles
 } from 'lucide-react'
 
@@ -96,6 +96,7 @@ export default function App() {
   const [rigEnabled,setRigEnabled]=useState(false)
   const [keyframes,setKeyframes]=useState([])
   const [timelinePlaying,setTimelinePlaying]=useState(false)
+  const [storyboard,setStoryboard]=useState([])
   const refs=useRef({})
   const inputRef=useRef()
   const modelInputRef=useRef()
@@ -128,6 +129,10 @@ export default function App() {
     setKeyframes(p=>[...p,frame]);setRigEnabled(true)
   }
   const applyKeyframe=frame=>{setRigEnabled(true);setCameraRig({position:[...frame.position],target:[...frame.target]});setCameraSettings(p=>({...p,focalLength:frame.focalLength}))}
+  const addShot=()=>{const id=uid();setStoryboard(p=>[...p,{id,title:'New Shot '+String(p.length+1).padStart(2,'0'),shotType:'Wide',duration:4,description:'',cameraPosition:[...cameraRig.position],cameraTarget:[...cameraRig.target],focalLength:cameraSettings.focalLength}])}
+  const updateShot=(id,key,value)=>setStoryboard(p=>p.map(shot=>shot.id===id?{...shot,[key]:value}:shot))
+  const captureShot=id=>setStoryboard(p=>p.map(shot=>shot.id===id?{...shot,cameraPosition:[...cameraRig.position],cameraTarget:[...cameraRig.target],focalLength:cameraSettings.focalLength}:shot))
+  const applyShot=shot=>{setRigEnabled(true);setCameraRig({position:[...shot.cameraPosition],target:[...shot.cameraTarget]});setCameraSettings(p=>({...p,focalLength:shot.focalLength}))}
   const moveRig=(axis,amount)=>setCameraRig(p=>({...p,position:p.position.map((v,i)=>i===axis?v+amount:v)}))
   const aimRig=(axis,amount)=>setCameraRig(p=>({...p,target:p.target.map((v,i)=>i===axis?v+amount:v)}))
   useEffect(()=>{
@@ -149,7 +154,7 @@ export default function App() {
     return ()=>cancelAnimationFrame(raf)
   },[timelinePlaying,keyframes])
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.4.0',projectName,items,cameraSettings,cameraRig,keyframes},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.5.0',projectName,items,cameraSettings,cameraRig,keyframes,storyboard},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -168,7 +173,7 @@ export default function App() {
   const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
-    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
   const axes=['X','Y','Z']
@@ -202,8 +207,8 @@ export default function App() {
         <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>{keyframes.length} keyframes</small></div><div className="timeline-actions"><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></div></div><div className="timeline-track">{keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
       </main>
       <aside className="right-panel">
-        <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button></div>
-        {activeTab==='camera'?<><div className="inspector-object"><div className="object-icon"><Camera/></div><div className="object-meta"><b>Cinematic Camera</b><small>LIVE VIEWPORT LENS</small></div></div>
+        <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button><button className={'tab '+(activeTab==='storyboard'?'active':'')} onClick={()=>setActiveTab('storyboard')}><FileText size={14}/> SHOTS</button></div>
+        {activeTab==='storyboard'?<><div className="inspector-object"><div className="object-icon"><FileText/></div><div className="object-meta"><b>Storyboard Manager</b><small>{storyboard.length} SHOTS IN SEQUENCE</small></div></div><section className="inspector-section"><button className="add-shot-button" onClick={addShot}><Plus size={13}/> ADD SHOT</button><div className="storyboard-list">{storyboard.length===0?<div className="storyboard-empty">No shots yet. Add a shot to build your storyboard.</div>:storyboard.map((shot,index)=><div className="storyboard-card" key={shot.id}><div className="shot-card-head"><span className="shot-number">{String(index+1).padStart(2,'0')}</span><button onClick={()=>applyShot(shot)}>VIEW</button><button className="shot-delete" onClick={()=>setStoryboard(p=>p.filter(x=>x.id!==shot.id))}><Trash2 size={12}/></button></div><input className="shot-title-input" value={shot.title} onChange={e=>updateShot(shot.id,'title',e.target.value)}/><div className="shot-fields"><label>SHOT TYPE<select value={shot.shotType} onChange={e=>updateShot(shot.id,'shotType',e.target.value)}><option>Extreme Wide</option><option>Wide</option><option>Medium</option><option>Close-up</option><option>Extreme Close-up</option><option>Over the Shoulder</option><option>POV</option><option>Insert</option></select></label><label>DURATION (SEC)<input type="number" min="1" max="120" value={shot.duration} onChange={e=>updateShot(shot.id,'duration',Math.max(1,Math.min(120,Number(e.target.value)||1)))}/></label></div><label className="shot-description-label">DIRECTOR'S NOTES<textarea rows="2" placeholder="Action, composition, movement..." value={shot.description} onChange={e=>updateShot(shot.id,'description',e.target.value)}/></label><div className="shot-camera-meta"><span>{shot.focalLength} mm</span><span>{shot.duration}s</span><button onClick={()=>captureShot(shot.id)}>CAPTURE CURRENT CAMERA</button></div></div>)}</div></section></>:activeTab==='camera'?<><div className="inspector-object"><div className="object-icon"><Camera/></div><div className="object-meta"><b>Cinematic Camera</b><small>LIVE VIEWPORT LENS</small></div></div>
           <section className="inspector-section"><div className="section-title">CAMERA RIG <i/></div><button className={'rig-toggle '+(rigEnabled?'enabled':'')} onClick={()=>setRigEnabled(v=>!v)}>{rigEnabled?'RIG CONTROL ON':'ENABLE RIG CONTROL'}</button><div className="rig-buttons"><div><span>DOLLY</span><button onClick={()=>moveRig(2,-.5)}>−</button><button onClick={()=>moveRig(2,.5)}>+</button></div><div><span>TRUCK</span><button onClick={()=>moveRig(0,-.5)}>−</button><button onClick={()=>moveRig(0,.5)}>+</button></div><div><span>PEDESTAL</span><button onClick={()=>moveRig(1,-.5)}>−</button><button onClick={()=>moveRig(1,.5)}>+</button></div></div><div className="rig-buttons"><div><span>PAN</span><button onClick={()=>aimRig(0,-.5)}>−</button><button onClick={()=>aimRig(0,.5)}>+</button></div><div><span>TILT</span><button onClick={()=>aimRig(1,-.5)}>−</button><button onClick={()=>aimRig(1,.5)}>+</button></div><div><span>RESET</span><button onClick={()=>{setCameraRig({position:[8,6,9],target:[0,0,0]});setRigEnabled(true)}}>↺</button></div></div><div className="camera-note">Enable rig control to lock the viewport camera to these controls. Orbit navigation is paused while the rig is active.</div></section><section className="inspector-section"><div className="section-title">CAMERA PROFILE <i/></div><select className="camera-select" value={cameraSettings.profile} onChange={e=>setCameraSettings(p=>({...p,profile:e.target.value,sensorWidth:e.target.value==='Sony Venice 2'?36:e.target.value==='ARRI Alexa Mini LF'?36.7:27.99}))}><option>ARRI Alexa 35</option><option>ARRI Alexa Mini LF</option><option>Sony Venice 2</option><option>Super 35 Generic</option></select><div className="camera-note">Sensor width: {cameraSettings.sensorWidth.toFixed(2)} mm</div></section>
           <section className="inspector-section"><div className="section-title">LENS SETTINGS <i/></div><div className="camera-control"><label>Focal Length</label><div><input type="range" min="18" max="200" step="1" value={cameraSettings.focalLength} onChange={e=>setCameraSettings(p=>({...p,focalLength:Number(e.target.value)}))}/><strong>{cameraSettings.focalLength} mm</strong></div></div><div className="lens-presets">{[18,24,35,50,85,135].map(v=><button className={cameraSettings.focalLength===v?'chosen':''} key={v} onClick={()=>setCameraSettings(p=>({...p,focalLength:v}))}>{v}</button>)}</div><div className="camera-control aperture-control"><label>Aperture (metadata)</label><div><input type="range" min="1.4" max="16" step="0.1" value={cameraSettings.aperture} onChange={e=>setCameraSettings(p=>({...p,aperture:Number(e.target.value)}))}/><strong>f/{cameraSettings.aperture.toFixed(1)}</strong></div></div><div className="camera-note">Aperture is stored in the shot settings. Optical depth-of-field rendering is planned for a later build.</div></section>
           <section className="inspector-section"><div className="section-title">FRAMING <i/></div><div className="data-row"><span>Horizontal FOV</span><code>{(2*Math.atan(cameraSettings.sensorWidth/(2*cameraSettings.focalLength))*180/Math.PI).toFixed(1)}°</code></div><div className="data-row"><span>Lens</span><code>{cameraSettings.focalLength} mm</code></div></section>
@@ -215,7 +220,7 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.4.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.5.0</span></div>
       </aside>
     </div>
     <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
