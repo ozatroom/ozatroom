@@ -134,3 +134,10 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Video preview recording uses the configured camera-track duration.
 - Dolly Zoom utility adjusts focal lengths along an existing camera track based on camera-to-target distance. This is a simplified previs effect, not a physically calibrated lens simulation.
 - Camera duration and rig settings persist in project snapshots and local autosave.
+
+
+## v1.6.0 — Cinematic Camera Tools
+- Added a live procedural handheld camera shake control for rig preview and WebM recording.
+- Added focus-distance metadata controls (0.2–50 m), saved with project settings.
+- Aperture and focus distance remain shot-planning metadata; optical depth-of-field rendering is not implemented in this version.
+- Camera shake is a realtime preview effect and is not baked into camera keyframe coordinates.
