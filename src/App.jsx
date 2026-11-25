@@ -243,7 +243,7 @@ export default function App() {
     }
     raf=requestAnimationFrame(tick)
     return ()=>cancelAnimationFrame(raf)
-  },[workspaceMode,timelinePlaying,timelineDuration,playhead])
+  },[workspaceMode,timelinePlaying,timelineDuration])
   useEffect(()=>{
     if(workspaceMode!=='animate'||!objectKeyframes.length)return
     const grouped=new Map()
