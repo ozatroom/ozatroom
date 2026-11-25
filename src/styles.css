@@ -162,3 +162,7 @@
 
 /* v1.4.0 camera rig presets */
 .rig-preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:10px 0 7px}.rig-preset-grid button{height:27px;border:1px solid #343c44;border-radius:3px;background:#1a2025;color:#9da7af;font:8px 'DM Mono';letter-spacing:.35px;cursor:pointer}.rig-preset-grid button.chosen,.rig-preset-grid button:hover{border-color:#a78258;background:#302820;color:#e2bd91}.orbit-path-button{width:100%;height:29px;margin:2px 0 9px;border:1px solid #6b5238;border-radius:4px;background:#292219;color:#e2bd91;font:8px 'DM Mono';letter-spacing:.4px;cursor:pointer}.orbit-path-button:hover{background:#3a2d20;border-color:#bd9162}
+
+
+/* v1.5.0 camera animation controls */
+.camera-waypoint-row select{width:76px;height:23px;border:1px solid #343c44;border-radius:3px;background:#1a2025;color:#b7c1c8;font:8px 'DM Mono';padding:0 3px;outline:none}.camera-waypoint-row select:focus{border-color:#a78258}
