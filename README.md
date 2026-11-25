@@ -119,3 +119,10 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Camera mode opens the camera inspector and enables camera rig controls.
 - Space toggles timeline playback; Delete removes the selected object; W/E/R/Q switch transform tools.
 - Object keyframes are stored in the .ozprevis.json project file and can be played or scrubbed with Linear, Ease In-Out and Hold interpolation.
+
+
+## v1.4.0 — Camera Rig Presets
+- Added Director, Dolly, Orbit, Crane and FPV camera rig presets with one-click camera positioning.
+- Added a 360-degree Orbit Path generator that creates eight editable camera keyframes around the current target.
+- Camera rig type is saved in project snapshots and local autosave recovery.
+- Orbit generation replaces the current camera keyframe track; export remains realtime viewport WebM.
