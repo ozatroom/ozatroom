@@ -1,5 +1,12 @@
 # OZATROOM PREVIS
 
+**v1.0.0 — Object Animation Timeline**
+- Animate selected objects with transform keyframes recorded at the timeline playhead
+- Scrub the timeline and preview interpolated position, rotation and scale changes
+- Per-segment interpolation: Linear, Ease In-Out and Hold
+- Set sequence duration from 1 to 60 seconds and play object animation in the viewport
+- Object animation data, playhead and duration are saved in `.ozprevis.json`
+
 **v0.8.0 — Storyboard Frame Export**
 - Export every storyboard shot as a numbered PNG frame in one ZIP archive
 - Each frame is captured from the live WebGL viewport using that shot's saved camera position, target and focal length
@@ -99,4 +106,4 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Animate mode captures selected object transform keyframes with K and displays object keyframe markers in the timeline.
 - Camera mode opens the camera inspector and enables camera rig controls.
 - Space toggles timeline playback; Delete removes the selected object; W/E/R/Q switch transform tools.
-- Object keyframes are stored in the .ozprevis.json project file. Playback of object animation and interpolation are planned for the next timeline milestone.
+- Object keyframes are stored in the .ozprevis.json project file and can be played or scrubbed with Linear, Ease In-Out and Hold interpolation.
