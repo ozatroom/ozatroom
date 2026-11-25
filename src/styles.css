@@ -166,3 +166,7 @@
 
 /* v1.5.0 camera animation controls */
 .camera-waypoint-row select{width:76px;height:23px;border:1px solid #343c44;border-radius:3px;background:#1a2025;color:#b7c1c8;font:8px 'DM Mono';padding:0 3px;outline:none}.camera-waypoint-row select:focus{border-color:#a78258}
+
+
+/* v1.6.0 cinematic camera tools */
+.aperture-control + .camera-note{margin-top:5px}.camera-control input[type=range]{cursor:pointer}.camera-control strong{font-variant-numeric:tabular-nums}
