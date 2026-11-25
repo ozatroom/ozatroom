@@ -61,3 +61,5 @@ jobs:
 # Rebuild after global keyboard shortcut fix
 
 # Deploy v1.0.0 object animation timeline
+
+# Final v1.0.0 playback loop verification
