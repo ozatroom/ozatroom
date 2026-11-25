@@ -232,16 +232,18 @@ export default function App() {
   },[timelinePlaying,keyframes,workspaceMode])
   useEffect(()=>{
     if(workspaceMode!=='animate'||!timelinePlaying)return
-    let raf=0,last=null
+    let raf=0,last=null,elapsed=playhead
     const tick=now=>{
       if(last===null)last=now
       const delta=(now-last)/1000;last=now
-      setPlayhead(t=>{const next=t+delta;if(next>=timelineDuration){setTimelinePlaying(false);return timelineDuration}return next})
+      elapsed=Math.min(timelineDuration,elapsed+delta)
+      setPlayhead(elapsed)
+      if(elapsed>=timelineDuration){setTimelinePlaying(false);return}
       raf=requestAnimationFrame(tick)
     }
     raf=requestAnimationFrame(tick)
     return ()=>cancelAnimationFrame(raf)
-  },[workspaceMode,timelinePlaying,timelineDuration])
+  },[workspaceMode,timelinePlaying,timelineDuration,playhead])
   useEffect(()=>{
     if(workspaceMode!=='animate'||!objectKeyframes.length)return
     const grouped=new Map()
