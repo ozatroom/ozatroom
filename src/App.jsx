@@ -161,6 +161,7 @@ export default function App() {
   const [renderSettings,setRenderSettings]=useState({ratio:'16:9',resolution:'1920x1080',safeGuides:true,frameGuide:true})
   const [units,setUnits]=useState('m')
   const [exportingFrames,setExportingFrames]=useState(false)
+  const [exportingVideo,setExportingVideo]=useState(false)
   const [autosaveReady,setAutosaveReady]=useState(false)
   const [historyRevision,setHistoryRevision]=useState(0)
   const [autosaveStatus,setAutosaveStatus]=useState('RESTORING…')
@@ -288,6 +289,39 @@ export default function App() {
     setKeyframes(p=>[...p,frame]);setRigEnabled(true)
   }
   const applyKeyframe=frame=>{setRigEnabled(true);setCameraRig({position:[...frame.position],target:[...frame.target]});setCameraSettings(p=>({...p,focalLength:frame.focalLength}))}
+  const exportCameraVideo=async()=>{
+    if(keyframes.length<2||exportingVideo)return
+    const canvas=document.querySelector('.viewport canvas')
+    if(!canvas?.captureStream||!window.MediaRecorder){alert('This browser does not support viewport video recording. Try a current version of Chrome or Edge.');return}
+    const mimeType=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':MediaRecorder.isTypeSupported('video/webm;codecs=vp8')?'video/webm;codecs=vp8':'video/webm'
+    const stream=canvas.captureStream(24)
+    const chunks=[]
+    let recorder
+    try{
+      recorder=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:12000000})
+      setExportingVideo(true)
+      recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data)}
+      recorder.onerror=event=>{stream.getTracks().forEach(track=>track.stop());setExportingVideo(false);alert('Video recording failed: '+(event.error?.message||'unknown error'))}
+      recorder.onstop=()=>{
+        const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'})
+        const url=URL.createObjectURL(blob),a=document.createElement('a')
+        a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'ozatroom')+'-camera-preview.webm';a.click()
+        setTimeout(()=>URL.revokeObjectURL(url),2000)
+        stream.getTracks().forEach(track=>track.stop())
+        setExportingVideo(false)
+      }
+      recorder.start(250)
+      setTimelinePlaying(false)
+      await waitFrame()
+      setTimelinePlaying(true)
+      const duration=(keyframes.length-1)*1800
+      window.setTimeout(()=>{setTimelinePlaying(false);if(recorder.state!=='inactive')recorder.stop()},duration+300)
+    }catch(error){
+      stream.getTracks().forEach(track=>track.stop())
+      setExportingVideo(false)
+      alert('Could not start video recording: '+error.message)
+    }
+  }
   const addShot=()=>{const id=uid();setStoryboard(p=>[...p,{id,title:'New Shot '+String(p.length+1).padStart(2,'0'),shotType:'Wide',duration:4,description:'',cameraPosition:[...cameraRig.position],cameraTarget:[...cameraRig.target],focalLength:cameraSettings.focalLength}])}
   const updateShot=(id,key,value)=>setStoryboard(p=>p.map(shot=>shot.id===id?{...shot,[key]:value}:shot))
   const captureShot=id=>setStoryboard(p=>p.map(shot=>shot.id===id?{...shot,cameraPosition:[...cameraRig.position],cameraTarget:[...cameraRig.target],focalLength:cameraSettings.focalLength}:shot))
@@ -378,7 +412,7 @@ export default function App() {
     setItems(old=>old.map(item=>{const track=grouped.get(item.id);if(!track)return item;let a=track[0],b=track[track.length-1],t=0;if(playhead<=a.time)b=a;else if(playhead>=b.time)a=b;else{for(let i=0;i<track.length-1;i++){if(playhead>=track[i].time&&playhead<=track[i+1].time){a=track[i];b=track[i+1];break}}t=Math.max(0,Math.min(1,(playhead-a.time)/Math.max(.0001,b.time-a.time)));if(a.interpolation==='hold')t=0;else if(a.interpolation==='easeInOut')t=t*t*(3-2*t)}const mix=(x,y)=>x.map((v,i)=>v+(y[i]-v)*t);return {...item,position:mix(a.position,b.position),rotation:mix(a.rotation,b.rotation),scale:mix(a.scale,b.scale)}}))
   },[workspaceMode,playhead,objectKeyframes])
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'1.1.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'1.2.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -467,7 +501,7 @@ export default function App() {
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
         <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings} cameraRig={cameraRig} rigEnabled={rigEnabled}/><div className={'frame-guide '+(renderSettings.frameGuide?'':'hidden')} style={{aspectRatio:renderSettings.ratio.replace(':',' / '),width:(Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))<1?(82*Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))+'%':'82%'}}><div className={'safe-guide '+(renderSettings.safeGuides?'':'hidden')}></div></div><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
-        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<><button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button><button onClick={()=>setTimelinePlaying(v=>!v)} disabled={objectKeyframes.length<2}>{timelinePlaying?'Pause':'Play'}</button><span>{playhead.toFixed(2)} / {timelineDuration}s</span></>:<><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></>}</div></div><div className="timeline-track">{workspaceMode==='animate'?<><div className="playhead-controls"><label>DURATION <input type="number" min="1" max="60" value={timelineDuration} onChange={e=>setTimelineDuration(Math.max(1,Math.min(60,Number(e.target.value)||1)))}/> SEC</label><input aria-label="Timeline playhead" type="range" min="0" max={timelineDuration} step="0.01" value={Math.min(playhead,timelineDuration)} onChange={e=>{setTimelinePlaying(false);setPlayhead(Number(e.target.value))}}/><span>{playhead.toFixed(2)}s</span></div>{objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, move it, set time and press K</div>:<div className="object-track-list">{[...new Set(objectKeyframes.map(k=>k.objectId))].map(id=>{const track=objectKeyframes.filter(k=>k.objectId===id).sort((a,b)=>a.time-b.time);return <div className="object-track" key={id}><b>{track[0].objectName}</b>{track.map((frame,i)=><div className="object-keyframe-marker" key={frame.id} style={{left:(frame.time/timelineDuration*100)+'%'}}><button title={'Go to '+frame.time.toFixed(2)+'s'} onClick={()=>{setTimelinePlaying(false);setPlayhead(frame.time);setSelectedId(frame.objectId)}}>◆</button><select aria-label="Interpolation" value={frame.interpolation||'linear'} onChange={e=>setObjectKeyframes(p=>p.map(k=>k.id===frame.id?{...k,interpolation:e.target.value}:k))}><option value="linear">Linear</option><option value="easeInOut">Ease</option><option value="hold">Hold</option></select><button className="key-delete" title="Delete keyframe" onClick={()=>setObjectKeyframes(p=>p.filter(k=>k.id!==frame.id))}>×</button></div>)}</div>})}</div>}</>:keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<><button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button><button onClick={()=>setTimelinePlaying(v=>!v)} disabled={objectKeyframes.length<2}>{timelinePlaying?'Pause':'Play'}</button><span>{playhead.toFixed(2)} / {timelineDuration}s</span></>:<><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><button className="export-video-button" disabled={keyframes.length<2||exportingVideo} onClick={exportCameraVideo}><Download size={12}/>{exportingVideo?'RECORDING…':'EXPORT WEBM'}</button><span>24 FPS · CAMERA TRACK</span></>}</div></div><div className="timeline-track">{workspaceMode==='animate'?<><div className="playhead-controls"><label>DURATION <input type="number" min="1" max="60" value={timelineDuration} onChange={e=>setTimelineDuration(Math.max(1,Math.min(60,Number(e.target.value)||1)))}/> SEC</label><input aria-label="Timeline playhead" type="range" min="0" max={timelineDuration} step="0.01" value={Math.min(playhead,timelineDuration)} onChange={e=>{setTimelinePlaying(false);setPlayhead(Number(e.target.value))}}/><span>{playhead.toFixed(2)}s</span></div>{objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, move it, set time and press K</div>:<div className="object-track-list">{[...new Set(objectKeyframes.map(k=>k.objectId))].map(id=>{const track=objectKeyframes.filter(k=>k.objectId===id).sort((a,b)=>a.time-b.time);return <div className="object-track" key={id}><b>{track[0].objectName}</b>{track.map((frame,i)=><div className="object-keyframe-marker" key={frame.id} style={{left:(frame.time/timelineDuration*100)+'%'}}><button title={'Go to '+frame.time.toFixed(2)+'s'} onClick={()=>{setTimelinePlaying(false);setPlayhead(frame.time);setSelectedId(frame.objectId)}}>◆</button><select aria-label="Interpolation" value={frame.interpolation||'linear'} onChange={e=>setObjectKeyframes(p=>p.map(k=>k.id===frame.id?{...k,interpolation:e.target.value}:k))}><option value="linear">Linear</option><option value="easeInOut">Ease</option><option value="hold">Hold</option></select><button className="key-delete" title="Delete keyframe" onClick={()=>setObjectKeyframes(p=>p.filter(k=>k.id!==frame.id))}>×</button></div>)}</div>})}</div>}</>:keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
       </main>
       <aside className="right-panel">
         <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button><button className={'tab '+(activeTab==='storyboard'?'active':'')} onClick={()=>setActiveTab('storyboard')}><FileText size={14}/> SHOTS</button><button className={'tab '+(activeTab==='render'?'active':'')} onClick={()=>setActiveTab('render')}><MonitorPlay size={14}/> RENDER</button><button className={'tab '+(activeTab==='architecture'?'active':'')} onClick={()=>setActiveTab('architecture')}><Box size={14}/> ARCH</button></div>
@@ -483,7 +517,7 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v1.1.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v1.2.0</span></div>
       </aside>
     </div>
     <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>{autosaveStatus} · BEYOND REALITY.</div></footer>
