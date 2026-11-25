@@ -1,5 +1,11 @@
 # OZATROOM PREVIS
 
+**v0.8.0 — Storyboard Frame Export**
+- Export every storyboard shot as a numbered PNG frame in one ZIP archive
+- Each frame is captured from the live WebGL viewport using that shot's saved camera position, target and focal length
+- Original camera rig and focal length are restored after export
+- PNGs use the viewport's actual pixel dimensions; output resolution presets and framing overlays are not baked into exported images
+
 **v0.7.0 — Architectural Blockout Tools**
 - Add editable wall, floor and ceiling blockout elements from the ARCH tab
 - Preset dimensions: wall 4.0 × 2.8 × 0.2 m; floor/ceiling 4.0 × 0.12 × 4.0 m
