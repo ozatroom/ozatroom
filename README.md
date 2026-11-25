@@ -18,6 +18,13 @@ npm run build
 npm run preview
 ```
 
+## v0.5.0 — Storyboard & Shot Manager
+- Create and manage storyboard shots in a dedicated SHOTS tab
+- Edit shot names, shot type, duration and director's notes
+- Capture the current camera position, target and focal length into a shot
+- Recall a saved shot to restore its camera framing
+- Storyboard data is included in .ozprevis.json project files
+
 ## v0.4.0 — Camera Rig & Shot Timeline
 - Camera rig mode with Dolly, Truck and Pedestal movement controls
 - Pan and Tilt aiming controls with adjustable target point
