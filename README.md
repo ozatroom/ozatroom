@@ -18,6 +18,18 @@ npm run build
 npm run preview
 ```
 
+## v0.4.0 — Camera Rig & Shot Timeline
+- Camera rig mode with Dolly, Truck and Pedestal movement controls
+- Pan and Tilt aiming controls with adjustable target point
+- Save camera positions, targets and focal lengths as shot keyframes
+- Select keyframes to restore a shot; play a linear camera move between keyframes
+- Camera rig and keyframes are stored in the .ozprevis.json project
+
+## v0.3.0 — Cinematic Camera
+- ARRI Alexa 35, ARRI Alexa Mini LF, Sony Venice 2 and Super 35 profiles
+- Focal length presets and live horizontal field-of-view updates
+- Aperture metadata stored with camera settings (optical depth of field is not yet rendered)
+
 ## v0.2.0 — GLB Asset Import
 - Import binary glTF (.glb) assets up to 100 MB
 - Imported models appear as selectable Outliner items
