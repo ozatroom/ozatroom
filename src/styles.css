@@ -83,3 +83,10 @@
 .object-keyframe-marker button{width:19px;height:20px;padding:0;border:0;background:transparent;color:#e0b77f;font-size:12px;cursor:pointer}
 .object-keyframe-marker select{max-width:62px;height:18px;padding:0 2px;border:1px solid #39444c;border-radius:2px;background:#1b252c;color:#9fb5c1;font:7px 'DM Mono'}
 .timeline-track:has(.playhead-controls){height:104px;display:block;padding:10px 13px;overflow-y:auto}
+
+/* v1.1.0 history and recovery */
+.history-btn{min-width:65px;justify-content:center}
+.history-btn:disabled{opacity:.35;cursor:not-allowed}
+.object-keyframe-marker .key-delete{width:15px;height:18px;border:1px solid #604343;border-radius:2px;background:#2c2021;color:#d99a94;font:12px 'DM Sans';line-height:1;opacity:.8}
+.object-keyframe-marker .key-delete:hover{background:#573032;color:#fff}
+.statusbar>div:last-child{font-size:8px;color:#9b927f}
