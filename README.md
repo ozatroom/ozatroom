@@ -1,5 +1,11 @@
 # OZATROOM PREVIS
 
+**v1.2.0 — Camera Track & Video Preview**
+- Record camera-rig keyframes and play a continuous interpolated camera move in the viewport
+- Export the camera move as a browser-recorded WebM video at a 24 fps capture stream
+- Video export uses the live viewport canvas and current viewport dimensions; it is a realtime preview capture, not an offline 1080p/4K render
+- WebM is used because browser MediaRecorder support for MP4 is inconsistent; MP4 export is not included in this release
+
 **v1.1.0 — Editing Safety & Recovery**
 - Undo/Redo project history with Ctrl+Z, Ctrl+Y and toolbar controls (up to 60 snapshots)
 - Debounced local autosave in browser IndexedDB and automatic project recovery on next launch
