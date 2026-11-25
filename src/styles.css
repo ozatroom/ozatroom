@@ -69,3 +69,17 @@
 
 /* v0.9.0 workspace modes */
 .mode-switcher{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid #343b43;border-radius:5px;background:#101519}.mode-switcher button{height:25px;display:flex;align-items:center;gap:6px;padding:0 8px;border:1px solid transparent;border-radius:3px;background:transparent;color:#89939c;font:8px 'DM Mono';letter-spacing:.55px;cursor:pointer}.mode-switcher button span{color:#a88b6a;font-size:9px}.mode-switcher button.active{border-color:#64503a;background:#30271f;color:#e4c39d}.toolbar-mode-divider{height:20px;width:1px;background:#30363d}.object-keyframe{border-color:#465a67;background:#1d2830;color:#b7cedb}
+
+/* v1.0.0 object animation timeline */
+.playhead-controls{width:100%;display:flex;align-items:center;gap:10px;padding:0 2px 9px;color:#82909a;font:8px 'DM Mono';letter-spacing:.5px}
+.playhead-controls label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.playhead-controls input[type=number]{width:46px;height:22px;background:#1a2025;border:1px solid #343c44;border-radius:3px;color:#d7c2a5;padding:0 5px;font:9px 'DM Mono'}
+.playhead-controls input[type=range]{flex:1;min-width:80px;accent-color:#c69a6a}
+.playhead-controls>span{min-width:44px;text-align:right;color:#d2ad81}
+.object-track-list{display:flex;flex-direction:column;gap:9px;width:100%;max-height:62px;overflow-y:auto}
+.object-track{height:25px;position:relative;display:flex;align-items:center;min-width:100%;border-bottom:1px solid #343b42;background:repeating-linear-gradient(90deg,transparent 0,transparent 9.8%,#252d34 10%)}
+.object-track>b{position:sticky;left:0;z-index:2;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 7px;background:#171d22;border-right:1px solid #343b42;color:#9eabb4;font:8px 'DM Mono'}
+.object-keyframe-marker{position:absolute;top:0;transform:translateX(-50%);display:flex;align-items:center;gap:3px}
+.object-keyframe-marker button{width:19px;height:20px;padding:0;border:0;background:transparent;color:#e0b77f;font-size:12px;cursor:pointer}
+.object-keyframe-marker select{max-width:62px;height:18px;padding:0 2px;border:1px solid #39444c;border-radius:2px;background:#1b252c;color:#9fb5c1;font:7px 'DM Mono'}
+.timeline-track:has(.playhead-controls){height:104px;display:block;padding:10px 13px;overflow-y:auto}
