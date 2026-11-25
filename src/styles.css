@@ -29,3 +29,21 @@
 .keyframe-chip{min-width:112px;height:48px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:5px 8px;border:1px solid #594832;border-radius:4px;background:#29231d;color:#ddc09b;font:9px 'DM Mono';cursor:pointer}
 .keyframe-chip span{color:#a98a63;font-size:8px}
 .keyframe-chip small{color:#85919a;font:8px 'DM Mono'}
+
+/* v0.5.0 storyboard and shot manager */
+.add-shot-button{width:100%;height:30px;display:flex;align-items:center;justify-content:center;gap:7px;background:#bd9162;border:1px solid #bd9162;border-radius:4px;color:#15120f;font:9px 'DM Mono';letter-spacing:.6px;cursor:pointer}
+.storyboard-list{display:flex;flex-direction:column;gap:9px;margin-top:12px;max-height:calc(100vh - 245px);overflow-y:auto;padding-right:2px}
+.storyboard-empty{padding:24px 8px;text-align:center;color:#74808a;font-size:10px;line-height:1.6}
+.storyboard-card{border:1px solid #343b42;border-radius:5px;background:#171d22;padding:9px}
+.shot-card-head{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.shot-number{color:#c9a274;font:9px 'DM Mono';margin-right:auto}
+.shot-card-head button{height:21px;padding:0 6px;border:1px solid #3d454c;border-radius:3px;background:#20272d;color:#b7c1c8;font:8px 'DM Mono';cursor:pointer}
+.shot-card-head .shot-delete{width:23px;padding:0;color:#c48b8b}
+.shot-title-input{width:100%;height:27px;padding:0 7px;border:1px solid #343d45;border-radius:3px;background:#101519;color:#e0e5e8;font-size:10px;outline:none}
+.shot-fields{display:grid;grid-template-columns:1.2fr .8fr;gap:6px;margin-top:8px}
+.shot-fields label,.shot-description-label{display:flex;flex-direction:column;gap:5px;color:#7f8b94;font:8px 'DM Mono';letter-spacing:.4px}
+.shot-fields select,.shot-fields input,.shot-description-label textarea{width:100%;min-width:0;border:1px solid #343d45;border-radius:3px;background:#101519;color:#cbd3d9;padding:5px;font:9px 'DM Sans';outline:none}
+.shot-description-label{margin-top:9px}
+.shot-description-label textarea{resize:vertical;line-height:1.4}
+.shot-camera-meta{display:flex;align-items:center;gap:8px;margin-top:9px;color:#87939c;font:8px 'DM Mono'}
+.shot-camera-meta button{margin-left:auto;border:0;background:transparent;color:#d2ad81;font:7px 'DM Mono';cursor:pointer}
