@@ -253,21 +253,28 @@ export default function App() {
   useEffect(()=>{
     const onKeyDown = event => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
-      const tag = event.target?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return
-      const key = event.key.toLowerCase()
-      if (key === 'b') { setWorkspaceMode('build'); setActiveTab('inspector'); setTool('select'); return }
-      if (key === 'a') { setWorkspaceMode('animate'); setTool('select'); return }
-      if (key === 'c') { setWorkspaceMode('camera'); setActiveTab('camera'); setRigEnabled(true); return }
-      if (key === 'k') { if(workspaceMode==='animate') addObjectKeyframe(); else addKeyframe(); return }
-      if (event.code === 'Space') { event.preventDefault(); if(workspaceMode!=='animate') setTimelinePlaying(v=>!v); return }
-      if (key === 'delete' || key === 'backspace') { remove(); return }
-      const modes = {w:'translate',e:'rotate',r:'scale',q:'select'}
-      const mode = modes[key]
+      const target = event.target
+      const typing = target?.closest?.('input, textarea, select, [contenteditable="true"], [role="textbox"]')
+      if (typing || target?.isContentEditable) return
+
+      // Use physical key codes so shortcuts work with both Latin and Cyrillic layouts.
+      const code = event.code
+      const handled = ['KeyB','KeyA','KeyC','KeyK','KeyW','KeyE','KeyR','KeyQ','Space','Delete','Backspace'].includes(code)
+      if (!handled) return
+      event.preventDefault()
+
+      if (code === 'KeyB') { setWorkspaceMode('build'); setActiveTab('inspector'); setTool('select'); return }
+      if (code === 'KeyA') { setWorkspaceMode('animate'); setTool('select'); return }
+      if (code === 'KeyC') { setWorkspaceMode('camera'); setActiveTab('camera'); setRigEnabled(true); return }
+      if (code === 'KeyK') { if(workspaceMode==='animate') addObjectKeyframe(); else addKeyframe(); return }
+      if (code === 'Space') { if(workspaceMode!=='animate') setTimelinePlaying(v=>!v); return }
+      if (code === 'Delete' || code === 'Backspace') { remove(); return }
+      const modes = {KeyW:'translate',KeyE:'rotate',KeyR:'scale',KeyQ:'select'}
+      const mode = modes[code]
       if (mode) setTool(mode)
     }
-    window.addEventListener('keydown', onKeyDown)
-    return ()=>window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, {capture:true})
+    return ()=>window.removeEventListener('keydown', onKeyDown, {capture:true})
   },[workspaceMode,selected,objectKeyframes.length,keyframes.length])
   const axes=['X','Y','Z']
   return <div className="app-shell">
