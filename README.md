@@ -1,76 +1,41 @@
-# OZATROOM AI FILM STUDIO
+# OZATROOM PREVIS
 
-A free-first cinematic pre-production workspace for films, series, storyboards, character continuity and AI-generation prompts.
+**Cinematic Previsualization Studio** — browser-based 3D scene builder foundation.
 
-## Current MVP
-
-- Project dashboard with search and type filters
-- Create film, series, commercial and animation projects
-- Project Manager with editable project metadata and production status
-- Series management with seasons and episodes, including summaries, duration and workflow status
-- Storyboard workspace with scene creation, editing and deletion
-- Scene fields for location, time of day, description, action, dialogue, camera and image-generation prompt
-- Copy prompt to clipboard
-- Responsive desktop and mobile layout
-- Browser-local persistence with automatic migration from the original MVP storage keys
-
-## Core architecture
-
-```text
-src/
-  core/
-    storage.js
-    schema.js
-    modules.js
-  components/
-    ProjectManager.jsx
-  App.jsx
-  main.jsx
-  styles.css
-```
-
-- `storage.js`: namespaced, versioned local persistence and legacy-key migration
-- `schema.js`: workspace, project, season, episode and scene normalization
-- `modules.js`: central module registry
-- `ProjectManager.jsx`: project settings, seasons and episode management
-
-### Data layer
-
-- Core storage uses namespaced keys: `ozatroom:core:v1:*`
-- Existing `ozatroom-projects` and `ozatroom-storyboards` data is migrated on first read.
-- Workspace schema is versioned independently from the storage-key version.
-- Projects, seasons, episodes and storyboards remain local to the current browser.
-- Cloud sync, accounts and remote media storage are intentionally deferred.
-
-## Development
+## Run locally
+Requirements: Node.js 20.19+ or 22.12+.
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build
+Open the local Vite URL (normally http://localhost:5173).
 
+## Production build
 ```bash
 npm run build
+npm run preview
 ```
 
-Cloudflare Pages settings: build command `npm run build`, output directory `dist`.
-
-## Product principles
-
-- Free-first: no mandatory paid AI API for the core workspace.
-- Local-first: projects remain usable without an account or backend.
-- Modular: production tools are separated into independent modules.
-- Continuity-first: characters, locations, props and visual locks will be reusable across scenes.
-- Never place API keys or private credentials in frontend code.
+## v0.1.0 — Scene Builder foundation
+- Three.js viewport through React Three Fiber
+- Perspective orbit navigation, realtime lighting and ground grid
+- Scene hierarchy / Outliner
+- Add box, sphere, cylinder and plane primitives
+- Select objects in viewport or Outliner
+- Translate, rotate and scale gizmos
+- Numeric transform inspector and material color editing
+- Duplicate, delete and visibility toggle
+- Save and load local `.ozprevis.json` project files
 
 ## Roadmap
+1. GLB/glTF asset import and robust selection
+2. Cinematic camera system: sensor, focal length, focus, DOF and camera rigs
+3. Shot timeline, keyframes and motion paths
+4. Storyboard and shot list
+5. Secure backend adapters for Higgsfield, Kling and Veo
 
-1. Core architecture and versioned storage — implemented
-2. Project Manager: seasons, episodes and production status — initial module implemented
-3. Character and Location Libraries with continuity locks
-4. Script Studio and expanded Storyboard
-5. Prompt Studio with reusable image/video prompt presets
-6. Media Library, versions and production export
-7. Optional cloud database, authentication and synchronization
+AI provider credentials must remain on the server and must never be embedded in browser code.
+
+This is an initial development scaffold, not a production release. AI provider integrations, cloud storage, collaboration and final video rendering are not implemented yet.

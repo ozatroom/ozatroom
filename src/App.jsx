@@ -1,133 +1,140 @@
-import { useMemo, useState } from "react";
-import { readCollection, writeCollection } from "./core/storage.js";
-import { normalizeWorkspace } from "./core/schema.js";
-import { MODULES } from "./core/modules.js";
-import ProjectManager from "./components/ProjectManager.jsx";
-import Characters from "./components/Characters.jsx";
-import FilmChat from "./components/FilmChat.jsx";
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { Grid, OrbitControls, TransformControls } from '@react-three/drei'
+import * as THREE from 'three'
+import {
+  Box, Circle, Cylinder, Grid3X3, Layers3, Move, Rotate3D, Scaling,
+  Save, FolderOpen, Plus, Trash2, Copy, Eye, EyeOff, Camera,
+  ChevronDown, MousePointer2, Settings2, Film, Clapperboard, Sparkles
+} from 'lucide-react'
 
-const starterProjects = [
-  { id: "last-route", title: "THE LAST ROUTE", type: "Сериал", genre: "Crime thriller · Adventure", status: "В работе", scenes: 12, updated: "17 ноября 2026", description: "Последний маршрут. История о дороге, которая меняет всё.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85" },
-  { id: "dream", title: "ПУТЬ ДИЗАЙНЕРА", type: "Анимационный сериал", genre: "Animation · Drama", status: "Черновик", scenes: 8, updated: "12 ноября 2026", description: "История мечты, творчества и пути к собственной студии.", image: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1200&q=85" },
-  { id: "untitled", title: "Новый проект", type: "Фильм", genre: "Не выбран", status: "Идея", scenes: 0, updated: "—", description: "Начните с идеи и создайте свою следующую историю.", image: "" }
-];
-const emptyScene = (number) => ({ id: crypto.randomUUID(), number, title: "Новая сцена", location: "", time: "День", description: "", action: "", dialogue: "", camera: "", prompt: "" });
-const Icon = ({ children }) => <span className="icon" aria-hidden="true">{children}</span>;
+const uid = () => 'obj_' + Math.random().toString(36).slice(2, 9)
+const starter = [
+  { id:'ground', name:'Ground Plane', kind:'plane', position:[0,-.04,0], rotation:[-Math.PI/2,0,0], scale:[12,12,1], color:'#343c44', visible:true },
+  { id:'cube_01', name:'Cube 01', kind:'box', position:[0,.8,0], rotation:[0,.35,0], scale:[1.6,1.6,1.6], color:'#b7a18a', visible:true },
+  { id:'sphere_01', name:'Sphere 01', kind:'sphere', position:[2.4,.7,-.6], rotation:[0,0,0], scale:[1.35,1.35,1.35], color:'#738a91', visible:true }
+]
+const kindIcon = k => k==='box' ? Box : k==='sphere' ? Circle : k==='cylinder' ? Cylinder : Grid3X3
 
-function App() {
-  const [initialWorkspace] = useState(() => normalizeWorkspace({
-    projects: readCollection("projects", "ozatroom-projects", starterProjects),
-    storyboards: readCollection("storyboards", "ozatroom-storyboards", {})
-  }));
-  const [projects, setProjects] = useState(initialWorkspace.projects);
-  const [storyboards, setStoryboards] = useState(initialWorkspace.storyboards);
-  const [characters, setCharacters] = useState(() => readCollection("characters", "ozatroom-characters", []));
-  const [chatMessages, setChatMessages] = useState(() => readCollection("chat", "ozatroom-chat", []));
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("Все проекты");
-  const [modal, setModal] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newType, setNewType] = useState("Фильм");
-  const [activeProject, setActiveProject] = useState(null);
-  const [activeModule, setActiveModule] = useState("overview");
-  const [selectedScene, setSelectedScene] = useState(null);
-  const [notice, setNotice] = useState("");
-
-  const saveProjects = (next) => { setProjects(next); writeCollection("projects", next); };
-  const saveBoards = (next) => { setStoryboards(next); writeCollection("storyboards", next); };
-  const saveCharacters = (next) => { setCharacters(next); writeCollection("characters", next); };
-  const saveChat = (next) => { setChatMessages(next); writeCollection("chat", next); };
-  const visible = useMemo(() => projects.filter(p => (p.title + " " + p.genre).toLowerCase().includes(query.toLowerCase()) && (filter === "Все проекты" || p.type.toLowerCase().includes(filter.toLowerCase()))), [projects, query, filter]);
-  const currentProject = projects.find(p => p.id === activeProject?.id) || projects[0];
-  const scenes = currentProject ? (storyboards[currentProject.id] || []) : [];
-  const currentScene = scenes.find(s => s.id === selectedScene) || scenes[0] || null;
-  const activeModuleInfo = MODULES.find(module => module.id === activeModule);
-
-  function createProject(e) {
-    e.preventDefault(); if (!newTitle.trim()) return;
-    const project = { id: crypto.randomUUID(), title: newTitle.trim().toUpperCase(), type: newType, genre: "Жанр не выбран", status: "Идея", scenes: 0, updated: "Только что", description: "Новый кинопроект OZATROOM.", image: "" };
-    saveProjects([project, ...projects]); setNewTitle(""); setModal(false); setActiveProject(project); setActiveModule("project-manager");
-  }
-  function addScene() {
-    if (!currentProject) return;
-    const scene = emptyScene(scenes.length + 1);
-    const next = { ...storyboards, [currentProject.id]: [...scenes, scene] };
-    saveBoards(next); setSelectedScene(scene.id);
-    saveProjects(projects.map(p => p.id === currentProject.id ? { ...p, scenes: scenes.length + 1, updated: "Только что" } : p));
-  }
-  function updateScene(field, value) {
-    if (!currentProject || !currentScene) return;
-    saveBoards({ ...storyboards, [currentProject.id]: scenes.map(s => s.id === currentScene.id ? { ...s, [field]: value } : s) });
-  }
-  function deleteScene() {
-    if (!currentProject || !currentScene) return;
-    const nextScenes = scenes.filter(s => s.id !== currentScene.id).map((s, i) => ({ ...s, number: i + 1 }));
-    saveBoards({ ...storyboards, [currentProject.id]: nextScenes }); setSelectedScene(nextScenes[0]?.id || null);
-    saveProjects(projects.map(p => p.id === currentProject.id ? { ...p, scenes: nextScenes.length } : p));
-  }
-  async function copyPrompt() {
-    if (!currentScene?.prompt) return;
-    try { await navigator.clipboard.writeText(currentScene.prompt); setNotice("Промпт скопирован"); setTimeout(() => setNotice(""), 1800); } catch { setNotice("Не удалось скопировать"); }
-  }
-  const updateProject = (updated) => saveProjects(projects.map((project) => project.id === updated.id ? updated : project));
-  const openProjectManager = (project = currentProject) => { setActiveProject(project); setActiveModule("project-manager"); };
-  const openStoryboard = (project = currentProject) => { setActiveProject(project); setActiveModule("storyboard"); setSelectedScene(storyboards[project?.id]?.[0]?.id || null); };
-
-  return <div className="app-shell">
-    <aside className="sidebar">
-      <div className="brand"><div className="brand-mark">O.</div><div><strong>OZATROOM</strong><small>AI FILM STUDIO</small></div></div>
-      <div className="workspace-label">WORKSPACE</div>
-      <nav>
-        <button className={activeModule === "overview" ? "nav-item active" : "nav-item"} onClick={() => setActiveModule("overview")}><Icon>▦</Icon> Обзор</button>
-        <button className={activeModule === "project-manager" ? "nav-item active" : "nav-item"} onClick={() => openProjectManager()}><Icon>▣</Icon> Мои проекты <span className="nav-count">{projects.length}</span></button>
-        <button className={activeModule === "storyboard" ? "nav-item active" : "nav-item"} onClick={() => openStoryboard()}><Icon>▤</Icon> Раскадровка</button>
-        <button className={activeModule === "characters" ? "nav-item active" : "nav-item"} onClick={() => setActiveModule("characters")}><Icon>♙</Icon> Персонажи <span className="nav-count">{characters.length}</span></button>
-        <button className={activeModule === "ai-chat" ? "nav-item active" : "nav-item"} onClick={() => setActiveModule("ai-chat")}><Icon>✧</Icon> AI Director <span className="nav-count">AI</span></button>
-        <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Prompt Studio — следующий этап разработки."); }}><Icon>⌘</Icon> Prompt Studio</button>
-        <button className="nav-item" onClick={() => { setActiveModule("placeholder"); setNotice("Медиатека — следующий этап разработки."); }}><Icon>▧</Icon> Медиатека</button>
-      </nav>
-      <div className="sidebar-bottom"><div className="storage-card"><div className="storage-top"><span>ЛОКАЛЬНОЕ ХРАНИЛИЩЕ</span><span className="green-dot"/></div><strong>Ваши проекты</strong><p>Данные сохраняются в этом браузере.</p><div className="storage-line"><i/></div><small>Бесплатный режим · MVP</small></div><div className="profile"><div className="avatar">O</div><div><strong>OZATROOM</strong><small>Creator workspace</small></div><span className="profile-dots">•••</span></div></div>
-    </aside>
-    <main className="main">
-      <header className="topbar"><div className="breadcrumb">OZATROOM <span>/</span> <b>{activeModuleInfo?.label?.toUpperCase() || "ОБЗОР"}</b></div><div className="top-actions"><span className="system-status"><i/> Локальное сохранение</span><button className="help-btn" onClick={() => setNotice("OZATROOM AI FILM STUDIO — браузерная среда кинопроизводства. Данные хранятся локально в этом браузере.")}>? <span>Помощь</span></button></div></header>
-      <div className="studio-toolbar">
-        <div className="studio-context"><span className="studio-context-label">ТЕКУЩИЙ ПРОЕКТ</span><select aria-label="Текущий проект" value={currentProject?.id || ""} onChange={event => { const p = projects.find(item => item.id === event.target.value); setActiveProject(p || null); setSelectedScene(storyboards[p?.id]?.[0]?.id || null); }}><option value="" disabled>Выберите проект</option>{projects.map(project => <option key={project.id} value={project.id}>{project.title}</option>)}</select></div>
-        <div className="studio-tool-tabs" role="navigation" aria-label="Инструменты проекта">
-          <button className={activeModule === "project-manager" ? "studio-tool active" : "studio-tool"} onClick={() => openProjectManager()}>⌘ <span>Проект</span></button>
-          <button className={activeModule === "storyboard" ? "studio-tool active" : "studio-tool"} onClick={() => openStoryboard()}>▤ <span>Раскадровка</span></button>
-          <button className={activeModule === "overview" ? "studio-tool active" : "studio-tool"} onClick={() => setActiveModule("overview")}>▦ <span>Библиотека</span></button>
-        </div>
-        <div className="studio-toolbar-end"><span className="studio-save-indicator"><i/> Сохранено локально</span>{activeModule === "storyboard" && <button className="studio-add-scene" onClick={addScene}>＋ Сцена</button>}</div>
-      </div>
-      {activeModule === "ai-chat" ? <FilmChat messages={chatMessages} onChange={saveChat} project={currentProject}/> : activeModule === "characters" ? <Characters characters={characters} onChange={saveCharacters}/> : activeModule === "project-manager" ? <ProjectManager project={currentProject} onUpdate={updateProject} onStoryboard={() => openStoryboard(currentProject)}/> : activeModule === "storyboard" ? <section className="storyboard-page">
-        <div className="storyboard-heading"><div><div className="eyebrow">PRE-PRODUCTION / SHOT PLANNING</div><h1>Раскадровка <em>проекта.</em></h1><p>Разложите историю на сцены и подготовьте каждый кадр к производству.</p></div><button className="primary-btn" onClick={addScene}>＋ Добавить сцену</button></div>
-        <div className="storyboard-toolbar"><label>Проект<select value={currentProject?.id || ""} onChange={e => { const p = projects.find(x => x.id === e.target.value); setActiveProject(p); setSelectedScene(storyboards[p?.id]?.[0]?.id || null); }} >{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><div className="scene-total"><strong>{scenes.length.toString().padStart(2,"0")}</strong><span>СЦЕН В РАСКАДРОВКЕ</span></div></div>
-        <div className="storyboard-layout">
-          <aside className="scene-list"><div className="scene-list-head"><strong>СЦЕНЫ</strong><span>{scenes.length}</span></div>{scenes.map(scene => <button key={scene.id} className={currentScene?.id === scene.id ? "scene-list-item selected" : "scene-list-item"} onClick={() => setSelectedScene(scene.id)}><span className="scene-number">{String(scene.number).padStart(2,"0")}</span><span><b>{scene.title || "Без названия"}</b><small>{scene.location || "Локация не указана"} · {scene.time}</small></span><i>›</i></button>)}{scenes.length === 0 && <div className="scene-empty">Пока нет сцен.<br/>Нажмите «Добавить сцену», чтобы начать.</div>}<button className="scene-add" onClick={addScene}>＋ Новая сцена</button></aside>
-          <div className="scene-editor">{currentScene ? <>
-            <div className="editor-top"><div><div className="eyebrow">SCENE {String(currentScene.number).padStart(2,"0")}</div><h2>Параметры сцены</h2></div><button className="delete-scene" onClick={deleteScene}>Удалить сцену</button></div>
-            <div className="editor-fields">
-              <label className="field-wide">Название сцены<input value={currentScene.title} onChange={e=>updateScene("title",e.target.value)} placeholder="Например, Прибытие к резиденции"/></label>
-              <label>Локация<input value={currentScene.location} onChange={e=>updateScene("location",e.target.value)} placeholder="Горная дорога, резиденция..."/></label>
-              <label>Время<select value={currentScene.time} onChange={e=>updateScene("time",e.target.value)}><option>Рассвет</option><option>Утро</option><option>День</option><option>Закат</option><option>Ночь</option></select></label>
-              <label className="field-wide">Краткое описание<textarea rows="2" value={currentScene.description} onChange={e=>updateScene("description",e.target.value)} placeholder="Что происходит в этой сцене?"/></label>
-              <label className="field-wide">Действие / постановка<textarea rows="3" value={currentScene.action} onChange={e=>updateScene("action",e.target.value)} placeholder="Опишите действия персонажей, движение и развитие сцены..."/></label>
-              <label className="field-wide">Диалоги<textarea rows="2" value={currentScene.dialogue} onChange={e=>updateScene("dialogue",e.target.value)} placeholder="Персонаж: реплика..."/></label>
-              <label className="field-wide">Камера и композиция<textarea rows="2" value={currentScene.camera} onChange={e=>updateScene("camera",e.target.value)} placeholder="План, объектив, движение камеры, композиция..."/></label>
-              <label className="field-wide">Промпт для генерации кадра<textarea rows="4" value={currentScene.prompt} onChange={e=>updateScene("prompt",e.target.value)} placeholder="Write your image-generation prompt in English..."/></label>
-            </div>
-            <div className="editor-actions"><span><i/> Изменения сохраняются автоматически</span><button className="primary-btn" onClick={copyPrompt}>Копировать промпт ↗</button></div>
-          </> : <div className="no-scene"><div>✳</div><h2>Создайте первую сцену</h2><p>Добавьте сцену, чтобы начать работу над раскадровкой.</p><button className="primary-btn" onClick={addScene}>＋ Добавить сцену</button></div>}</div>
-        </div>
-      </section> : activeModule === "placeholder" ? <section className="placeholder-page"><div className="eyebrow">COMING NEXT</div><h1>Модуль в разработке.</h1><p>{notice || "Этот инструмент появится в следующих этапах OZATROOM AI FILM STUDIO."}</p><button className="primary-btn" onClick={() => setActiveModule("overview")}>Вернуться к проектам</button></section> : <>
-        <section className="welcome"><div><div className="eyebrow"><span/> YOUR CREATIVE PRODUCTION SPACE</div><h1>Каждая большая история<br/><em>начинается здесь.</em></h1><p>От первой идеи до финального кадра. Всё кинопроизводство — в одном пространстве.</p><button className="primary-btn" onClick={() => setModal(true)}><span>＋</span> Создать проект</button></div><div className="welcome-art"><div className="art-orbit orbit-one"/><div className="art-orbit orbit-two"/><div className="art-core"><span>O.</span><small>DIRECTOR'S SPACE</small></div><div className="art-tag tag-one">01 / STORY</div><div className="art-tag tag-two">02 / FRAME</div><div className="art-tag tag-three">03 / CINEMA</div></div></section>
-        <section className="stats"><div className="stat"><span>ВСЕ ПРОЕКТЫ</span><strong>{projects.length.toString().padStart(2,"0")}</strong><small>В вашей библиотеке</small></div><div className="stat"><span>СЦЕНЫ</span><strong>{projects.reduce((a,p)=>a+(p.scenes||0),0).toString().padStart(2,"0")}</strong><small>Во всех проектах</small></div><div className="stat"><span>В РАБОТЕ</span><strong>{projects.filter(p=>p.status==="В работе").length.toString().padStart(2,"0")}</strong><small>Активные проекты</small></div><div className="stat stat-note"><span>СЛЕДУЮЩИЙ ШАГ</span><strong>AI DIRECTOR <b>↗</b></strong><small>Скоро в рабочем пространстве</small></div></section>
-        <section className="projects-section"><div className="section-heading"><div><div className="eyebrow">YOUR LIBRARY</div><h2>Мои проекты <span>{projects.length}</span></h2></div><button className="text-btn" onClick={() => setModal(true)}>＋ Новый проект</button></div><div className="project-tools"><div className="filters">{["Все проекты","Фильм","Сериал"].map(f=><button key={f} className={filter===f?"filter active-filter":"filter"} onClick={()=>setFilter(f)}>{f}</button>)}</div><label className="search"><Icon>⌕</Icon><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Поиск проектов..."/><kbd>⌘ K</kbd></label></div><div className="project-grid">{visible.map(p=><article className="project-card" key={p.id} onClick={()=>openProjectManager(p)}><div className={"project-cover "+(!p.image?"no-image":"")} style={p.image?{backgroundImage:"linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.55)),url("+p.image+")"}:{}}><span className="project-type">{p.type}</span><span className="cover-title">{p.title}</span>{!p.image&&<div className="cover-placeholder">O.</div>}</div><div className="project-info"><div className="project-meta"><span className={"status "+(p.status==="В работе"?"in-progress":"")}>{p.status}</span><span>{p.updated}</span></div><p>{p.description}</p><div className="project-footer"><span><Icon>▤</Icon> {storyboards[p.id]?.length || p.scenes || 0} сцен</span><span className="open-project">Открыть проект ↗</span></div></div></article>)}{visible.length===0&&<div className="empty-state">Проекты не найдены. Попробуйте изменить запрос или создайте новый проект.</div>}<button className="add-card" onClick={()=>setModal(true)}><span>＋</span><strong>Создать новый проект</strong><small>Начните новую историю с чистого листа</small></button></div></section>
-      </>}
-      <footer><span>© 2026 OZATROOM AI FILM STUDIO</span><span>MADE FOR STORYTELLERS <b>✳</b></span></footer>
-    </main>
-    {modal&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><form className="modal" onSubmit={createProject}><button type="button" className="modal-close" onClick={()=>setModal(false)}>×</button><div className="eyebrow">NEW PRODUCTION</div><h2>Создать проект</h2><p>Дайте вашей следующей истории имя.</p><label>Название проекта<input autoFocus value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Например, THE LAST ROUTE" required/></label><label>Тип проекта<select value={newType} onChange={e=>setNewType(e.target.value)}><option>Фильм</option><option>Сериал</option><option>Рекламный ролик</option><option>Музыкальное видео</option><option>Анимационный сериал</option></select></label><button className="primary-btn modal-submit" type="submit">Создать проект <span>→</span></button></form></div>}
-    {notice && <div className="toast">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
-  </div>;
+function MeshItem({ item, selected, register, onSelect }) {
+  const mesh = useRef()
+  const geometry = item.kind==='sphere' ? <sphereGeometry args={[.5,32,24]}/> :
+    item.kind==='cylinder' ? <cylinderGeometry args={[.5,.5,1,32]}/> :
+    item.kind==='plane' ? <planeGeometry args={[1,1]}/> : <boxGeometry args={[1,1,1]}/>
+  return <mesh ref={n=>{mesh.current=n;register(item.id,n)}} position={item.position} rotation={item.rotation}
+    scale={item.scale} visible={item.visible} castShadow={item.kind!=='plane'} receiveShadow
+    onClick={e=>{e.stopPropagation();onSelect(item.id)}}>
+    {geometry}
+    <meshStandardMaterial color={item.color} roughness={.72} metalness={.08}/>
+    {selected && <mesh scale={1.025}><boxGeometry/><meshBasicMaterial color="#d6a66b" wireframe/></mesh>}
+  </mesh>
 }
-export default App;
+
+function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd}) {
+  const object = window.__ozatroomObjects?.[selectedId]
+  return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov:42}} gl={{antialias:true,powerPreference:'high-performance'}}>
+    <color attach="background" args={['#171b20']}/>
+    <fog attach="fog" args={['#171b20',22,48]}/>
+    <ambientLight intensity={.8}/>
+    <directionalLight position={[5,10,6]} intensity={2.1} castShadow shadow-mapSize={[2048,2048]}/>
+    <directionalLight position={[-6,4,-4]} intensity={.55} color="#8ca4bb"/>
+    <Grid args={[40,40]} position={[0,-.035,0]} cellSize={1} cellThickness={.6} cellColor="#46505a"
+      sectionSize={5} sectionThickness={1.1} sectionColor="#77818b" fadeDistance={35} fadeStrength={1.5} infiniteGrid/>
+    {items.map(item=><MeshItem key={item.id} item={item} selected={item.id===selectedId} register={register} onSelect={setSelectedId}/>)}
+    {object && tool!=='select' && <TransformControls object={object} mode={tool} onMouseUp={onTransformEnd}/>}
+    <OrbitControls makeDefault enabled={tool==='select'} enableDamping dampingFactor={.08}/>
+  </Canvas>
+}
+
+function ToolButton({title,active,onClick,children}) {
+  return <button className={'icon-button '+(active?'active':'')} title={title} onClick={onClick}>{children}</button>
+}
+
+export default function App() {
+  const [items,setItems]=useState(starter)
+  const [selectedId,setSelectedId]=useState('cube_01')
+  const [tool,setTool]=useState('select')
+  const [projectName,setProjectName]=useState('Untitled Cinematic')
+  const [addOpen,setAddOpen]=useState(false)
+  const refs=useRef({})
+  const inputRef=useRef()
+  const selected=items.find(x=>x.id===selectedId)
+  const register=useCallback((id,obj)=>{if(obj)refs.current[id]=obj;else delete refs.current[id];window.__ozatroomObjects=refs.current},[])
+  const sync=useCallback(()=>setItems(old=>old.map(x=>{const o=refs.current[x.id];return o?{...x,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()}:x})),[])
+  const add=(kind)=>{
+    const count=items.filter(x=>x.kind===kind).length+1, id=uid()
+    const names={box:'Cube',sphere:'Sphere',cylinder:'Cylinder',plane:'Plane'}
+    const item={id,name:names[kind]+' '+String(count).padStart(2,'0'),kind,
+      position:[0,kind==='plane'?0:.6,0],rotation:kind==='plane'?[-Math.PI/2,0,0]:[0,0,0],
+      scale:kind==='plane'?[3,3,1]:[1,1,1],color:kind==='plane'?'#414a52':'#b7a18a',visible:true}
+    setItems(p=>[...p,item]);setSelectedId(id);setAddOpen(false)
+  }
+  const update=(key,index,value)=>{
+    if(!selectedId)return
+    setItems(p=>p.map(x=>{
+      if(x.id!==selectedId)return x
+      if(key==='name'||key==='color')return {...x,[key]:value}
+      const v=[...x[key]];v[index]=Number(value)
+      const o=refs.current[selectedId]
+      if(o){if(key==='position')o.position.set(...v);if(key==='rotation')o.rotation.set(...v);if(key==='scale')o.scale.set(...v)}
+      return {...x,[key]:v}
+    }))
+  }
+  const remove=()=>{if(!selectedId||selectedId==='ground')return;setItems(p=>p.filter(x=>x.id!==selectedId));setSelectedId(null)}
+  const duplicate=()=>{if(!selected)return;const id=uid();setItems(p=>[...p,{...selected,id,name:selected.name+' Copy',position:[selected.position[0]+1,selected.position[1],selected.position[2]+1]}]);setSelectedId(id)}
+  const save=()=>{
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.1.0',projectName,items},null,2)],{type:'application/json'})
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
+  }
+  const openFile=file=>{
+    if(!file)return
+    const reader=new FileReader()
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.readAsText(file)
+  }
+  const axes=['X','Y','Z']
+  return <div className="app-shell">
+    <header className="topbar">
+      <div className="brand"><div className="brand-mark">O</div><div><div className="brand-name">OZATROOM <span>PREVIS</span></div><div className="brand-sub">CINEMATIC PREVISUALIZATION</div></div></div>
+      <div className="project-title"><i/> <input value={projectName} onChange={e=>setProjectName(e.target.value)}/><ChevronDown size={13}/></div>
+      <div className="top-actions"><button className="top-btn" onClick={()=>inputRef.current.click()}><FolderOpen size={15}/> Open</button><button className="top-btn primary" onClick={save}><Save size={15}/> Save Project</button><div className="avatar">O</div><input ref={inputRef} hidden type="file" accept=".json,.ozprevis.json" onChange={e=>openFile(e.target.files?.[0])}/></div>
+    </header>
+    <div className="workspace">
+      <aside className="left-panel">
+        <div className="panel-heading">SCENE HIERARCHY <button className="tiny-icon" onClick={()=>add('box')}><Plus size={15}/></button></div>
+        <div className="scene-root"><ChevronDown size={13}/><Layers3 size={14}/> Scene Collection <span>{items.length}</span></div>
+        <div className="outliner">{items.map(item=>{const I=kindIcon(item.kind);return <div key={item.id} className={'outliner-row '+(selectedId===item.id?'selected':'')} onClick={()=>setSelectedId(item.id)}><I size={14}/><span>{item.name}</span><button className="visibility" onClick={e=>{e.stopPropagation();setItems(p=>p.map(x=>x.id===item.id?{...x,visible:!x.visible}:x))}}>{item.visible?<Eye size={13}/>:<EyeOff size={13}/>}</button></div>})}</div>
+        <div className="left-footer"><i/> {items.length} OBJECTS IN SCENE</div>
+      </aside>
+      <main className="center-stage">
+        <div className="viewport-toolbar">
+          <div className="tool-group">
+            <ToolButton title="Select / Orbit" active={tool==='select'} onClick={()=>setTool('select')}><MousePointer2 size={16}/></ToolButton>
+            <ToolButton title="Move (W)" active={tool==='translate'} onClick={()=>setTool('translate')}><Move size={16}/></ToolButton>
+            <ToolButton title="Rotate (E)" active={tool==='rotate'} onClick={()=>setTool('rotate')}><Rotate3D size={16}/></ToolButton>
+            <ToolButton title="Scale (R)" active={tool==='scale'} onClick={()=>setTool('scale')}><Scaling size={16}/></ToolButton>
+          </div><div className="toolbar-divider"/>
+          <div className="tool-group add-wrap"><button className="add-menu" onClick={()=>setAddOpen(v=>!v)}><Plus size={15}/> Add Object <ChevronDown size={12}/></button>
+            {addOpen&&<div className="add-dropdown">{[['box','Cube',Box],['sphere','Sphere',Circle],['cylinder','Cylinder',Cylinder],['plane','Plane',Grid3X3]].map(([k,n,I])=><button key={k} onClick={()=>add(k)}><I size={14}/>{n}</button>)}</div>}
+            <ToolButton title="Duplicate" onClick={duplicate}><Copy size={15}/></ToolButton><ToolButton title="Delete" onClick={remove}><Trash2 size={15}/></ToolButton>
+          </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
+        </div>
+        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync}/><div className="viewport-hud"><span>WORLD SPACE</span><span>METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>Coming in next module</small></div><span>24 FPS　 00:00:00:00</span></div><div className="timeline-empty"><Clapperboard size={18}/> Animation timeline will be added after Scene Builder.</div></div>
+      </main>
+      <aside className="right-panel">
+        <div className="panel-tabs"><div className="tab active"><Settings2 size={14}/> INSPECTOR</div><div className="tab"><Camera size={14}/> CAMERA</div></div>
+        {selected?<><div className="inspector-object"><div className="object-icon">{(()=>{const I=kindIcon(selected.kind);return <I/>})()}</div><div className="object-meta"><input value={selected.name} onChange={e=>update('name',null,e.target.value)}/><small>{selected.kind.toUpperCase()} · OBJECT</small></div></div>
+          <section className="inspector-section"><div className="section-title">TRANSFORM <i/></div>
+            {['position','rotation','scale'].map(key=><div className="transform-block" key={key}><div className="transform-label">{key.toUpperCase()} <button onClick={()=>[0,1,2].forEach(i=>update(key,i,key==='scale'?1:0))}>RESET</button></div><div className="vector-inputs">{axes.map((axis,i)=><label key={axis}><span className={'axis-'+axis.toLowerCase()}>{axis}</span><input type="number" step=".1" value={Number(selected[key][i].toFixed(3))} onChange={e=>update(key,i,e.target.value)}/></label>)}</div></div>)}
+          </section>
+          <section className="inspector-section"><div className="section-title">MATERIAL <i/></div><div className="color-row"><span>Base Color</span><input type="color" value={selected.color} onChange={e=>update('color',null,e.target.value)}/><code>{selected.color.toUpperCase()}</code></div></section>
+          <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
+          <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
+        </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.1.0</span></div>
+      </aside>
+    </div>
+    <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
+  </div>
+}

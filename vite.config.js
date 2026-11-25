@@ -1,13 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-export default defineConfig({
-  base: "/ozatroom/",
-  esbuild: {
-    jsx: "automatic"
-  },
-  build: {
-    outDir: "dist",
-    assetsDir: "assets",
-    emptyOutDir: true
-  }
-});
+export default defineConfig({ plugins: [react()] })
