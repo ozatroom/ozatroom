@@ -119,6 +119,8 @@ export default function App() {
   const [tool,setTool]=useState('select')
   const [workspaceMode,setWorkspaceMode]=useState('build')
   const [objectKeyframes,setObjectKeyframes]=useState([])
+  const [playhead,setPlayhead]=useState(0)
+  const [timelineDuration,setTimelineDuration]=useState(10)
   const [projectName,setProjectName]=useState('Untitled Cinematic')
   const [addOpen,setAddOpen]=useState(false)
   const [activeTab,setActiveTab]=useState('inspector')
@@ -161,8 +163,8 @@ export default function App() {
   const duplicate=()=>{if(!selected)return;const id=uid();setItems(p=>[...p,{...selected,id,name:selected.name+' Copy',position:[selected.position[0]+1,selected.position[1],selected.position[2]+1]}]);setSelectedId(id)}
   const addObjectKeyframe=()=>{
     if(!selected)return
-    const frame={id:uid(),objectId:selected.id,objectName:selected.name,time:objectKeyframes.length*1.5,position:[...selected.position],rotation:[...selected.rotation],scale:[...selected.scale]}
-    setObjectKeyframes(p=>[...p,frame])
+    const frame={id:uid(),objectId:selected.id,objectName:selected.name,time:playhead,interpolation:'linear',position:[...selected.position],rotation:[...selected.rotation],scale:[...selected.scale]}
+    setObjectKeyframes(p=>[...p.filter(k=>!(k.objectId===selected.id&&Math.abs(k.time-playhead)<0.001)),frame].sort((a,b)=>a.time-b.time))
   }
   const addKeyframe=()=>{
     const frame={id:uid(),label:'Shot '+String(keyframes.length+1).padStart(2,'0'),position:[...cameraRig.position],target:[...cameraRig.target],focalLength:cameraSettings.focalLength}
@@ -210,6 +212,7 @@ export default function App() {
   const moveRig=(axis,amount)=>setCameraRig(p=>({...p,position:p.position.map((v,i)=>i===axis?v+amount:v)}))
   const aimRig=(axis,amount)=>setCameraRig(p=>({...p,target:p.target.map((v,i)=>i===axis?v+amount:v)}))
   useEffect(()=>{
+    if(workspaceMode==='animate') return
     if(!timelinePlaying||keyframes.length<2){if(timelinePlaying)setTimelinePlaying(false);return}
     let raf=0,start=null
     const duration=(keyframes.length-1)*1800
@@ -226,9 +229,37 @@ export default function App() {
     }
     raf=requestAnimationFrame(tick)
     return ()=>cancelAnimationFrame(raf)
-  },[timelinePlaying,keyframes])
+  },[timelinePlaying,keyframes,workspaceMode])
+  useEffect(()=>{
+    if(workspaceMode!=='animate'||!timelinePlaying)return
+    let raf=0,last=null
+    const tick=now=>{
+      if(last===null)last=now
+      const delta=(now-last)/1000;last=now
+      setPlayhead(t=>{const next=t+delta;if(next>=timelineDuration){setTimelinePlaying(false);return timelineDuration}return next})
+      raf=requestAnimationFrame(tick)
+    }
+    raf=requestAnimationFrame(tick)
+    return ()=>cancelAnimationFrame(raf)
+  },[workspaceMode,timelinePlaying,timelineDuration])
+  useEffect(()=>{
+    if(workspaceMode!=='animate'||!objectKeyframes.length)return
+    const grouped=new Map()
+    objectKeyframes.forEach(frame=>{if(!grouped.has(frame.objectId))grouped.set(frame.objectId,[]);grouped.get(frame.objectId).push(frame)})
+    grouped.forEach((track,id)=>{
+      track.sort((a,b)=>a.time-b.time)
+      let a=track[0],b=track[track.length-1],t=0
+      if(playhead<=a.time){b=a}
+      else if(playhead>=b.time){a=b}
+      else {for(let i=0;i<track.length-1;i++){if(playhead>=track[i].time&&playhead<=track[i+1].time){a=track[i];b=track[i+1];break}}const span=Math.max(.0001,b.time-a.time);t=Math.max(0,Math.min(1,(playhead-a.time)/span));if(a.interpolation==='hold')t=0;else if(a.interpolation==='easeInOut')t=t*t*(3-2*t)}
+      const mix=(x,y)=>x.map((v,i)=>v+(y[i]-v)*t)
+      const obj=refs.current[id]
+      if(obj){obj.position.set(...mix(a.position,b.position));obj.rotation.set(...mix(a.rotation,b.rotation));obj.scale.set(...mix(a.scale,b.scale))}
+    })
+    setItems(old=>old.map(item=>{const track=grouped.get(item.id);if(!track)return item;let a=track[0],b=track[track.length-1],t=0;if(playhead<=a.time)b=a;else if(playhead>=b.time)a=b;else{for(let i=0;i<track.length-1;i++){if(playhead>=track[i].time&&playhead<=track[i+1].time){a=track[i];b=track[i+1];break}}t=Math.max(0,Math.min(1,(playhead-a.time)/Math.max(.0001,b.time-a.time)));if(a.interpolation==='hold')t=0;else if(a.interpolation==='easeInOut')t=t*t*(3-2*t)}const mix=(x,y)=>x.map((v,i)=>v+(y[i]-v)*t);return {...item,position:mix(a.position,b.position),rotation:mix(a.rotation,b.rotation),scale:mix(a.scale,b.scale)}}))
+  },[workspaceMode,playhead,objectKeyframes])
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.9.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,storyboard,renderSettings},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'1.0.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -247,7 +278,7 @@ export default function App() {
   const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
-    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.objectKeyframes))setObjectKeyframes(d.objectKeyframes);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.objectKeyframes))setObjectKeyframes(d.objectKeyframes);if(Number.isFinite(d.playhead))setPlayhead(d.playhead);if(Number.isFinite(d.timelineDuration))setTimelineDuration(d.timelineDuration);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
   useEffect(()=>{
@@ -310,7 +341,7 @@ export default function App() {
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
         <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings} cameraRig={cameraRig} rigEnabled={rigEnabled}/><div className={'frame-guide '+(renderSettings.frameGuide?'':'hidden')} style={{aspectRatio:renderSettings.ratio.replace(':',' / '),width:(Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))<1?(82*Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))+'%':'82%'}}><div className={'safe-guide '+(renderSettings.safeGuides?'':'hidden')}></div></div><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
-        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button>:<button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button>}<button disabled={workspaceMode==='animate'||keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>{workspaceMode==='animate'?'PLAYBACK NEXT UPDATE':'24 FPS'}</span></div></div><div className="timeline-track">{workspaceMode==='animate'?(objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, set its transform, then press K</div>:objectKeyframes.map((frame,i)=><div className="keyframe-chip object-keyframe" key={frame.id}><span>{String(i+1).padStart(2,'0')} · {frame.time.toFixed(1)}s</span>{frame.objectName}<small>OBJECT TRANSFORM</small></div>)):keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<><button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button><button onClick={()=>setTimelinePlaying(v=>!v)} disabled={objectKeyframes.length<2}>{timelinePlaying?'Pause':'Play'}</button><span>{playhead.toFixed(2)} / {timelineDuration}s</span></>:<><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></>}</div></div><div className="timeline-track">{workspaceMode==='animate'?<><div className="playhead-controls"><label>DURATION <input type="number" min="1" max="60" value={timelineDuration} onChange={e=>setTimelineDuration(Math.max(1,Math.min(60,Number(e.target.value)||1)))}/> SEC</label><input aria-label="Timeline playhead" type="range" min="0" max={timelineDuration} step="0.01" value={Math.min(playhead,timelineDuration)} onChange={e=>{setTimelinePlaying(false);setPlayhead(Number(e.target.value))}}/><span>{playhead.toFixed(2)}s</span></div>{objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, move it, set time and press K</div>:<div className="object-track-list">{[...new Set(objectKeyframes.map(k=>k.objectId))].map(id=>{const track=objectKeyframes.filter(k=>k.objectId===id).sort((a,b)=>a.time-b.time);return <div className="object-track" key={id}><b>{track[0].objectName}</b>{track.map((frame,i)=><div className="object-keyframe-marker" key={frame.id} style={{left:(frame.time/timelineDuration*100)+'%'}}><button title={'Go to '+frame.time.toFixed(2)+'s'} onClick={()=>{setTimelinePlaying(false);setPlayhead(frame.time);setSelectedId(frame.objectId)}}>◆</button><select aria-label="Interpolation" value={frame.interpolation||'linear'} onChange={e=>setObjectKeyframes(p=>p.map(k=>k.id===frame.id?{...k,interpolation:e.target.value}:k))}><option value="linear">Linear</option><option value="easeInOut">Ease</option><option value="hold">Hold</option></select></div>)}</div>})}</div>}</>:keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
       </main>
       <aside className="right-panel">
         <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button><button className={'tab '+(activeTab==='storyboard'?'active':'')} onClick={()=>setActiveTab('storyboard')}><FileText size={14}/> SHOTS</button><button className={'tab '+(activeTab==='render'?'active':'')} onClick={()=>setActiveTab('render')}><MonitorPlay size={14}/> RENDER</button><button className={'tab '+(activeTab==='architecture'?'active':'')} onClick={()=>setActiveTab('architecture')}><Box size={14}/> ARCH</button></div>
@@ -326,7 +357,7 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.9.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v1.0.0</span></div>
       </aside>
     </div>
     <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
