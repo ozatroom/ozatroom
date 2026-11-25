@@ -126,3 +126,11 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Added a 360-degree Orbit Path generator that creates eight editable camera keyframes around the current target.
 - Camera rig type is saved in project snapshots and local autosave recovery.
 - Orbit generation replaces the current camera keyframe track; export remains realtime viewport WebM.
+
+
+## v1.5.0 — Camera Animation
+- Camera track playback now uses an adjustable total duration (2–30 seconds).
+- Per-waypoint interpolation: Linear, Ease In/Out, and Hold.
+- Video preview recording uses the configured camera-track duration.
+- Dolly Zoom utility adjusts focal lengths along an existing camera track based on camera-to-target distance. This is a simplified previs effect, not a physically calibrated lens simulation.
+- Camera duration and rig settings persist in project snapshots and local autosave.
