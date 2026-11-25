@@ -63,3 +63,5 @@ jobs:
 # Deploy v1.0.0 object animation timeline
 
 # Final v1.0.0 playback loop verification
+
+# Deploy v1.1.0 undo redo and autosave
