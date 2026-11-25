@@ -6,7 +6,7 @@ import { Grid, OrbitControls, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 import {
   Box, Circle, Cylinder, Grid3X3, Layers3, Move, Rotate3D, Scaling,
-  Save, FolderOpen, Plus, Trash2, Copy, Eye, EyeOff, Camera, FileText, Download, MonitorPlay,
+  Save, FolderOpen, Plus, Trash2, Copy, Eye, EyeOff, Camera, FileText, Download, MonitorPlay, Undo2, Redo2,
   ChevronDown, MousePointer2, Settings2, Film, Clapperboard, Sparkles
 } from 'lucide-react'
 
@@ -35,6 +35,34 @@ const zipStore = files => {
   const centralSize = central.reduce((sum,part)=>sum+part.length,0)
   const end = new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(centralSize),...u32(offset),...u16(0)])
   return new Blob([...chunks,...central,end],{type:'application/zip'})
+}
+
+
+const AUTOSAVE_DB = 'ozatroom-previs-local'
+const AUTOSAVE_STORE = 'projects'
+const openAutosaveDB = () => new Promise((resolve,reject) => {
+  if (!('indexedDB' in window)) return reject(new Error('IndexedDB unavailable'))
+  const request = indexedDB.open(AUTOSAVE_DB,1)
+  request.onupgradeneeded = () => request.result.createObjectStore(AUTOSAVE_STORE)
+  request.onsuccess = () => resolve(request.result)
+  request.onerror = () => reject(request.error)
+})
+const readAutosave = async () => {
+  const db = await openAutosaveDB()
+  return new Promise((resolve,reject) => {
+    const request = db.transaction(AUTOSAVE_STORE,'readonly').objectStore(AUTOSAVE_STORE).get('latest')
+    request.onsuccess = () => { db.close(); resolve(request.result || null) }
+    request.onerror = () => { db.close(); reject(request.error) }
+  })
+}
+const writeAutosave = async data => {
+  const db = await openAutosaveDB()
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction(AUTOSAVE_STORE,'readwrite')
+    tx.objectStore(AUTOSAVE_STORE).put(data,'latest')
+    tx.oncomplete = () => { db.close(); resolve() }
+    tx.onerror = () => { db.close(); reject(tx.error) }
+  })
 }
 
 const starter = [
@@ -133,12 +161,97 @@ export default function App() {
   const [renderSettings,setRenderSettings]=useState({ratio:'16:9',resolution:'1920x1080',safeGuides:true,frameGuide:true})
   const [units,setUnits]=useState('m')
   const [exportingFrames,setExportingFrames]=useState(false)
+  const [autosaveReady,setAutosaveReady]=useState(false)
+  const [autosaveStatus,setAutosaveStatus]=useState('RESTORING…')
+  const historyRef=useRef({past:[],future:[],last:null,ready:false,restoring:false})
   const refs=useRef({})
   const inputRef=useRef()
   const modelInputRef=useRef()
   const selected=items.find(x=>x.id===selectedId)
   const register=useCallback((id,obj)=>{if(obj)refs.current[id]=obj;else delete refs.current[id];window.__ozatroomObjects=refs.current},[])
   const sync=useCallback(()=>setItems(old=>old.map(x=>{const o=refs.current[x.id];return o?{...x,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()}:x})),[])
+
+  const snapshotProject=()=>({projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings})
+  const applySnapshot=data=>{
+    historyRef.current.restoring=true
+    historyRef.current.last=JSON.stringify(data)
+    setProjectName(data.projectName||'Untitled Cinematic')
+    setItems(data.items||starter)
+    setCameraSettings(data.cameraSettings||{profile:'ARRI Alexa 35',focalLength:35,sensorWidth:27.99,aperture:2.8})
+    setCameraRig(data.cameraRig||{position:[8,6,9],target:[0,0,0]})
+    setKeyframes(data.keyframes||[])
+    setObjectKeyframes(data.objectKeyframes||[])
+    setPlayhead(data.playhead||0)
+    setTimelineDuration(data.timelineDuration||10)
+    setStoryboard(data.storyboard||[])
+    setRenderSettings(data.renderSettings||{ratio:'16:9',resolution:'1920x1080',safeGuides:true,frameGuide:true})
+    setSelectedId((data.items||starter)[0]?.id||null)
+    setTimelinePlaying(false)
+  }
+  const undo=()=>{
+    const h=historyRef.current
+    if(!h.past.length)return
+    const current=snapshotProject(), previous=h.past.pop()
+    h.future.push(current)
+    applySnapshot(previous)
+  }
+  const redo=()=>{
+    const h=historyRef.current
+    if(!h.future.length)return
+    const current=snapshotProject(), next=h.future.pop()
+    h.past.push(current)
+    applySnapshot(next)
+  }
+  const canUndo=historyRef.current.past.length>0
+  const canRedo=historyRef.current.future.length>0
+  useEffect(()=>{
+    let active=true
+    readAutosave().then(data=>{
+      if(!active)return
+      if(data?.items?.length) {
+        setProjectName(data.projectName||'Recovered Project')
+        setItems(data.items)
+        setCameraSettings(data.cameraSettings||{profile:'ARRI Alexa 35',focalLength:35,sensorWidth:27.99,aperture:2.8})
+        setCameraRig(data.cameraRig||{position:[8,6,9],target:[0,0,0]})
+        setKeyframes(data.keyframes||[])
+        setObjectKeyframes(data.objectKeyframes||[])
+        setPlayhead(data.playhead||0)
+        setTimelineDuration(data.timelineDuration||10)
+        setStoryboard(data.storyboard||[])
+        setRenderSettings(data.renderSettings||{ratio:'16:9',resolution:'1920x1080',safeGuides:true,frameGuide:true})
+        setSelectedId(data.items[0]?.id||null)
+        setAutosaveStatus('RECOVERED')
+      } else setAutosaveStatus('READY')
+    }).catch(()=>{if(active)setAutosaveStatus('LOCAL STORAGE UNAVAILABLE')}).finally(()=>{
+      if(active){historyRef.current.last=JSON.stringify(snapshotProject());historyRef.current.ready=true;setAutosaveReady(true)}
+    })
+    return ()=>{active=false}
+  },[])
+  useEffect(()=>{
+    if(!autosaveReady)return
+    const timer=setTimeout(()=>{
+      writeAutosave(snapshotProject()).then(()=>setAutosaveStatus('SAVED LOCALLY')).catch(()=>setAutosaveStatus('AUTOSAVE FAILED'))
+    },700)
+    return ()=>clearTimeout(timer)
+  },[autosaveReady,projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings])
+  useEffect(()=>{
+    const h=historyRef.current
+    if(!h.ready)return
+    const current=JSON.stringify(snapshotProject())
+    if(h.restoring){h.restoring=false;h.last=current;return}
+    if(timelinePlaying){h.last=current;return}
+    if(!h.last){h.last=current;return}
+    if(current===h.last)return
+    const previous=h.last
+    const timer=setTimeout(()=>{
+      if(h.restoring)return
+      h.past.push(JSON.parse(previous))
+      if(h.past.length>60)h.past.shift()
+      h.future=[]
+      h.last=current
+    },180)
+    return ()=>clearTimeout(timer)
+  },[projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings,timelinePlaying])
   const add=(kind)=>{
     const count=items.filter(x=>x.kind===kind).length+1, id=uid()
     const names={box:'Cube',sphere:'Sphere',cylinder:'Cylinder',plane:'Plane',wall:'Wall',floor:'Floor',ceiling:'Ceiling'}
@@ -261,7 +374,7 @@ export default function App() {
     setItems(old=>old.map(item=>{const track=grouped.get(item.id);if(!track)return item;let a=track[0],b=track[track.length-1],t=0;if(playhead<=a.time)b=a;else if(playhead>=b.time)a=b;else{for(let i=0;i<track.length-1;i++){if(playhead>=track[i].time&&playhead<=track[i+1].time){a=track[i];b=track[i+1];break}}t=Math.max(0,Math.min(1,(playhead-a.time)/Math.max(.0001,b.time-a.time)));if(a.interpolation==='hold')t=0;else if(a.interpolation==='easeInOut')t=t*t*(3-2*t)}const mix=(x,y)=>x.map((v,i)=>v+(y[i]-v)*t);return {...item,position:mix(a.position,b.position),rotation:mix(a.rotation,b.rotation),scale:mix(a.scale,b.scale)}}))
   },[workspaceMode,playhead,objectKeyframes])
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'1.0.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'1.1.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -285,7 +398,14 @@ export default function App() {
   }
   useEffect(()=>{
     const onKeyDown = event => {
-      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.repeat) return
+      if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+        const command=event.code
+        if(command==='KeyZ'){event.preventDefault();if(event.shiftKey)redo();else undo();return}
+        if(command==='KeyY'){event.preventDefault();redo();return}
+        return
+      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return
       const target = event.target
       const typing = target?.closest?.('input, textarea, select, [contenteditable="true"], [role="textbox"]')
       if (typing || target?.isContentEditable) return
@@ -314,7 +434,7 @@ export default function App() {
     <header className="topbar">
       <div className="brand"><div className="brand-mark">O</div><div><div className="brand-name">OZATROOM <span>PREVIS</span></div><div className="brand-sub">CINEMATIC PREVISUALIZATION</div></div></div>
       <div className="project-title"><i/> <input value={projectName} onChange={e=>setProjectName(e.target.value)}/><ChevronDown size={13}/></div>
-      <div className="top-actions"><button className="top-btn" onClick={()=>modelInputRef.current.click()}><Plus size={15}/> Import GLB</button><button className="top-btn" onClick={()=>inputRef.current.click()}><FolderOpen size={15}/> Open</button><button className="top-btn primary" onClick={save}><Save size={15}/> Save Project</button><div className="avatar">O</div><input ref={inputRef} hidden type="file" accept=".json,.ozprevis.json" onChange={e=>openFile(e.target.files?.[0])}/><input ref={modelInputRef} hidden type="file" accept=".glb,model/gltf-binary" onChange={e=>{importModel(e.target.files?.[0]);e.target.value=""}}/></div>
+      <div className="top-actions"><button className="top-btn history-btn" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={undo}><Undo2 size={14}/> Undo</button><button className="top-btn history-btn" title="Redo (Ctrl+Y)" disabled={!canRedo} onClick={redo}><Redo2 size={14}/> Redo</button><button className="top-btn" onClick={()=>modelInputRef.current.click()}><Plus size={15}/> Import GLB</button><button className="top-btn" onClick={()=>inputRef.current.click()}><FolderOpen size={15}/> Open</button><button className="top-btn primary" onClick={save}><Save size={15}/> Save Project</button><div className="avatar">O</div><input ref={inputRef} hidden type="file" accept=".json,.ozprevis.json" onChange={e=>openFile(e.target.files?.[0])}/><input ref={modelInputRef} hidden type="file" accept=".glb,model/gltf-binary" onChange={e=>{importModel(e.target.files?.[0]);e.target.value=""}}/></div>
     </header>
     <div className="workspace">
       <aside className="left-panel">
@@ -359,9 +479,9 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v1.0.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v1.1.0</span></div>
       </aside>
     </div>
-    <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
+    <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>{autosaveStatus} · BEYOND REALITY.</div></footer>
   </div>
 }
