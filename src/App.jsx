@@ -138,7 +138,7 @@ function Viewport({items, selectedId, setSelectedId, tool, register, onTransform
     {rigEnabled && keyframes.length>0 && <>
       {keyframes.length>1 && <Line points={keyframes.map(frame=>frame.position)} color="#d6a66b" lineWidth={2} dashed dashSize={.18} gapSize={.1}/>}
       {keyframes.map((frame,index)=><group key={frame.id} ref={node=>{if(node){waypointRefs.current[frame.id]=node;if(frame.id===selectedCameraKeyframeId)setActiveWaypoint(node)}else delete waypointRefs.current[frame.id]}} position={frame.position} onClick={event=>{event.stopPropagation();setSelectedCameraKeyframeId(frame.id)}}>
-        <mesh><sphereGeometry args={[frame.id===selectedCameraKeyframeId?.22:.13,16,12]}/><meshBasicMaterial color={frame.id===selectedCameraKeyframeId?'#f2c28e':'#d6a66b'}/></mesh>
+        <mesh><sphereGeometry args={[frame.id===selectedCameraKeyframeId ? 0.22 : 0.13,16,12]}/><meshBasicMaterial color={frame.id===selectedCameraKeyframeId?'#f2c28e':'#d6a66b'}/></mesh>
       </group>)}
       {activeWaypoint && <TransformControls object={activeWaypoint} mode="translate" onMouseUp={()=>onCameraWaypointTransformEnd(selectedCameraKeyframeId,activeWaypoint.position.toArray())}/>}
     </>}
