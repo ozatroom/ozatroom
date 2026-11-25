@@ -18,6 +18,14 @@ npm run build
 npm run preview
 ```
 
+## v0.6.0 — Cinematic Render Preview
+- Preview framing guides for 16:9, 9:16, 1:1, 4:3 and 2.39:1 aspect ratios
+- Composition overlay with action/title safe zones and center guides
+- Resolution target presets from HD through 4K and vertical formats
+- Export the current WebGL viewport as a PNG image
+- Render preview settings are saved in the project file
+- PNG export uses the viewport's actual pixel dimensions; selected resolution is a target preset, not an offline render resolution
+
 ## v0.5.0 — Storyboard & Shot Manager
 - Create and manage storyboard shots in a dedicated SHOTS tab
 - Edit shot names, shot type, duration and director's notes
