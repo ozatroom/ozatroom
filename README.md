@@ -1,5 +1,12 @@
 # OZATROOM PREVIS
 
+**v0.7.0 — Architectural Blockout Tools**
+- Add editable wall, floor and ceiling blockout elements from the ARCH tab
+- Preset dimensions: wall 4.0 × 2.8 × 0.2 m; floor/ceiling 4.0 × 0.12 × 4.0 m
+- Transform inspector provides numeric width, height and depth editing through scale axes
+- Unit display presets for meters, centimeters and millimeters (scene coordinates remain meters)
+- Architectural elements are regular editable scene meshes and are saved in project files
+
 **Cinematic Previsualization Studio** — browser-based 3D scene builder.
 
 ## Run locally
