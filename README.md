@@ -141,3 +141,9 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Added focus-distance metadata controls (0.2–50 m), saved with project settings.
 - Aperture and focus distance remain shot-planning metadata; optical depth-of-field rendering is not implemented in this version.
 - Camera shake is a realtime preview effect and is not baked into camera keyframe coordinates.
+
+
+## v1.7.0 — Cinematic Camera Presets
+- Added one-click camera movement tracks: push-in, pull-out, truck left/right, crane up/down and pan left/right. Each creates editable start/end camera keyframes.
+- Added camera look presets: Cinematic, Portrait, Wide, Telephoto, Documentary and Anamorphic. Presets configure lens/sensor metadata for shot planning.
+- Presets create or update camera settings and keyframes within the current project; they do not claim to simulate physical camera hardware.
