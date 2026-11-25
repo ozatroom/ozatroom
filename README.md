@@ -47,3 +47,8 @@ npm run preview
 AI provider credentials must remain on the server and must never be embedded in browser code.
 
 **Note:** This is an evolving development build. The GLB importer supports self-contained binary GLB files; standalone .gltf files with external texture/buffer references are not supported yet.
+
+
+## GitHub Pages
+
+The `previs` branch is configured for automatic GitHub Pages deployment via GitHub Actions.
