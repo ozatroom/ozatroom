@@ -117,6 +117,8 @@ export default function App() {
   const [items,setItems]=useState(starter)
   const [selectedId,setSelectedId]=useState('cube_01')
   const [tool,setTool]=useState('select')
+  const [workspaceMode,setWorkspaceMode]=useState('build')
+  const [objectKeyframes,setObjectKeyframes]=useState([])
   const [projectName,setProjectName]=useState('Untitled Cinematic')
   const [addOpen,setAddOpen]=useState(false)
   const [activeTab,setActiveTab]=useState('inspector')
@@ -157,6 +159,11 @@ export default function App() {
   }
   const remove=()=>{if(!selectedId||selectedId==='ground')return;setItems(p=>p.filter(x=>x.id!==selectedId));setSelectedId(null)}
   const duplicate=()=>{if(!selected)return;const id=uid();setItems(p=>[...p,{...selected,id,name:selected.name+' Copy',position:[selected.position[0]+1,selected.position[1],selected.position[2]+1]}]);setSelectedId(id)}
+  const addObjectKeyframe=()=>{
+    if(!selected)return
+    const frame={id:uid(),objectId:selected.id,objectName:selected.name,time:objectKeyframes.length*1.5,position:[...selected.position],rotation:[...selected.rotation],scale:[...selected.scale]}
+    setObjectKeyframes(p=>[...p,frame])
+  }
   const addKeyframe=()=>{
     const frame={id:uid(),label:'Shot '+String(keyframes.length+1).padStart(2,'0'),position:[...cameraRig.position],target:[...cameraRig.target],focalLength:cameraSettings.focalLength}
     setKeyframes(p=>[...p,frame]);setRigEnabled(true)
@@ -221,7 +228,7 @@ export default function App() {
     return ()=>cancelAnimationFrame(raf)
   },[timelinePlaying,keyframes])
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.8.0',projectName,items,cameraSettings,cameraRig,keyframes,storyboard,renderSettings},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.9.0',projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,storyboard,renderSettings},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -240,7 +247,7 @@ export default function App() {
   const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
-    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.objectKeyframes))setObjectKeyframes(d.objectKeyframes);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
   useEffect(()=>{
@@ -248,13 +255,20 @@ export default function App() {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
       const tag = event.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return
+      const key = event.key.toLowerCase()
+      if (key === 'b') { setWorkspaceMode('build'); setActiveTab('inspector'); setTool('select'); return }
+      if (key === 'a') { setWorkspaceMode('animate'); setTool('select'); return }
+      if (key === 'c') { setWorkspaceMode('camera'); setActiveTab('camera'); setRigEnabled(true); return }
+      if (key === 'k') { if(workspaceMode==='animate') addObjectKeyframe(); else addKeyframe(); return }
+      if (event.code === 'Space') { event.preventDefault(); setTimelinePlaying(v=>!v); return }
+      if (key === 'delete' || key === 'backspace') { remove(); return }
       const modes = {w:'translate',e:'rotate',r:'scale',q:'select'}
-      const mode = modes[event.key.toLowerCase()]
+      const mode = modes[key]
       if (mode) setTool(mode)
     }
     window.addEventListener('keydown', onKeyDown)
     return ()=>window.removeEventListener('keydown', onKeyDown)
-  },[])
+  },[workspaceMode,selected,objectKeyframes.length,keyframes.length])
   const axes=['X','Y','Z']
   return <div className="app-shell">
     <header className="topbar">
@@ -271,6 +285,12 @@ export default function App() {
       </aside>
       <main className="center-stage">
         <div className="viewport-toolbar">
+          <div className="mode-switcher" role="group" aria-label="Workspace mode">
+            <button className={workspaceMode==='build'?'active':''} onClick={()=>{setWorkspaceMode('build');setActiveTab('inspector')}}><span>B</span> BUILD</button>
+            <button className={workspaceMode==='animate'?'active':''} onClick={()=>setWorkspaceMode('animate')}><span>A</span> ANIMATE</button>
+            <button className={workspaceMode==='camera'?'active':''} onClick={()=>{setWorkspaceMode('camera');setActiveTab('camera');setRigEnabled(true)}}><span>C</span> CAMERA</button>
+          </div>
+          <div className="toolbar-mode-divider"/>
           <div className="tool-group">
             <ToolButton title="Select / Orbit" active={tool==='select'} onClick={()=>setTool('select')}><MousePointer2 size={16}/></ToolButton>
             <ToolButton title="Move (W)" active={tool==='translate'} onClick={()=>setTool('translate')}><Move size={16}/></ToolButton>
@@ -283,7 +303,7 @@ export default function App() {
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
         <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings} cameraRig={cameraRig} rigEnabled={rigEnabled}/><div className={'frame-guide '+(renderSettings.frameGuide?'':'hidden')} style={{aspectRatio:renderSettings.ratio.replace(':',' / '),width:(Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))<1?(82*Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))+'%':'82%'}}><div className={'safe-guide '+(renderSettings.safeGuides?'':'hidden')}></div></div><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
-        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>{keyframes.length} keyframes</small></div><div className="timeline-actions"><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></div></div><div className="timeline-track">{keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button>:<button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button>}<button disabled={workspaceMode==='animate'?objectKeyframes.length<2:keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></div></div><div className="timeline-track">{workspaceMode==='animate'?(objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, set its transform, then press K</div>:objectKeyframes.map((frame,i)=><div className="keyframe-chip object-keyframe" key={frame.id}><span>{String(i+1).padStart(2,'0')} · {frame.time.toFixed(1)}s</span>{frame.objectName}<small>OBJECT TRANSFORM</small></div>)):keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
       </main>
       <aside className="right-panel">
         <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button><button className={'tab '+(activeTab==='storyboard'?'active':'')} onClick={()=>setActiveTab('storyboard')}><FileText size={14}/> SHOTS</button><button className={'tab '+(activeTab==='render'?'active':'')} onClick={()=>setActiveTab('render')}><MonitorPlay size={14}/> RENDER</button><button className={'tab '+(activeTab==='architecture'?'active':'')} onClick={()=>setActiveTab('architecture')}><Box size={14}/> ARCH</button></div>
@@ -299,7 +319,7 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.8.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.9.0</span></div>
       </aside>
     </div>
     <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
