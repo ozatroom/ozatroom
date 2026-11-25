@@ -90,7 +90,10 @@ function CameraRigView({enabled,position,target}) {
 }
 
 function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd, cameraSettings, cameraRig, rigEnabled}) {
-  const object = window.__ozatroomObjects?.[selectedId]
+  const [activeObject, setActiveObject] = useState(null)
+  useEffect(() => {
+    setActiveObject(window.__ozatroomObjects?.[selectedId] || null)
+  }, [selectedId, items])
   const fov = 2 * Math.atan(cameraSettings.sensorWidth / (2 * cameraSettings.focalLength)) * 180 / Math.PI
   return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov}} gl={{antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true}}>
     <CameraLens fov={fov}/><CameraRigView enabled={rigEnabled} position={cameraRig.position} target={cameraRig.target}/><color attach="background" args={['#171b20']}/>
@@ -101,7 +104,7 @@ function Viewport({items, selectedId, setSelectedId, tool, register, onTransform
     <Grid args={[40,40]} position={[0,-.035,0]} cellSize={1} cellThickness={.6} cellColor="#46505a"
       sectionSize={5} sectionThickness={1.1} sectionColor="#77818b" fadeDistance={35} fadeStrength={1.5} infiniteGrid/>
     {items.map(item=>item.kind==='model' ? <ImportedModel key={item.id} item={item} register={register} onSelect={setSelectedId}/> : <MeshItem key={item.id} item={item} selected={item.id===selectedId} register={register} onSelect={setSelectedId}/>)}
-    {object && tool!=='select' && <TransformControls object={object} mode={tool} onMouseUp={onTransformEnd}/>}
+    {activeObject && tool!=='select' && <TransformControls key={selectedId} object={activeObject} mode={tool} onMouseUp={onTransformEnd} />}
     <OrbitControls makeDefault enabled={tool==='select'&&!rigEnabled} enableDamping dampingFactor={.08}/>
   </Canvas>
 }
@@ -240,6 +243,18 @@ export default function App() {
     reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
+  useEffect(()=>{
+    const onKeyDown = event => {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+      const tag = event.target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return
+      const modes = {w:'translate',e:'rotate',r:'scale',q:'select'}
+      const mode = modes[event.key.toLowerCase()]
+      if (mode) setTool(mode)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return ()=>window.removeEventListener('keydown', onKeyDown)
+  },[])
   const axes=['X','Y','Z']
   return <div className="app-shell">
     <header className="topbar">
