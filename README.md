@@ -155,3 +155,9 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Added a local keyword-based blockout builder that creates basic scene objects, a three-shot storyboard and camera keyframes from a written scene description.
 - The generated video prompt can be copied for use in external AI video tools.
 - This release does not call ChatGPT or any external model. A secure server-side GPT API integration is still required for genuine conversational script analysis and robust scene generation.
+
+
+## v1.8.1 — Manual ChatGPT Scene Handoff
+- Added a paste-in JSON scene workflow that does not require an API connection.
+- ChatGPT can author a structured scene payload; paste it into AI SCENE to create editable 3D blockout objects, storyboard shots and camera keyframes.
+- The previous local keyword blockout remains available as a quick fallback.
