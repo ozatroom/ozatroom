@@ -51,11 +51,23 @@ function MeshItem({ item, selected, register, onSelect }) {
 
 function CameraLens({fov}) { const {camera}=useThree(); useEffect(()=>{camera.fov=fov;camera.updateProjectionMatrix()},[camera,fov]); return null }
 
-function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd, cameraSettings}) {
+function CameraRigView({enabled,position,target}) {
+  const {camera}=useThree()
+  useEffect(()=>{
+    if(!enabled)return
+    camera.position.set(...position)
+    camera.up.set(0,1,0)
+    camera.lookAt(...target)
+    camera.updateMatrixWorld()
+  },[camera,enabled,position,target])
+  return null
+}
+
+function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd, cameraSettings, cameraRig, rigEnabled}) {
   const object = window.__ozatroomObjects?.[selectedId]
   const fov = 2 * Math.atan(cameraSettings.sensorWidth / (2 * cameraSettings.focalLength)) * 180 / Math.PI
   return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov}} gl={{antialias:true,powerPreference:'high-performance'}}>
-    <CameraLens fov={fov}/><color attach="background" args={['#171b20']}/>
+    <CameraLens fov={fov}/><CameraRigView enabled={rigEnabled} position={cameraRig.position} target={cameraRig.target}/><color attach="background" args={['#171b20']}/>
     <fog attach="fog" args={['#171b20',22,48]}/>
     <ambientLight intensity={.8}/>
     <directionalLight position={[5,10,6]} intensity={2.1} castShadow shadow-mapSize={[2048,2048]}/>
@@ -64,7 +76,7 @@ function Viewport({items, selectedId, setSelectedId, tool, register, onTransform
       sectionSize={5} sectionThickness={1.1} sectionColor="#77818b" fadeDistance={35} fadeStrength={1.5} infiniteGrid/>
     {items.map(item=>item.kind==='model' ? <ImportedModel key={item.id} item={item} register={register} onSelect={setSelectedId}/> : <MeshItem key={item.id} item={item} selected={item.id===selectedId} register={register} onSelect={setSelectedId}/>)}
     {object && tool!=='select' && <TransformControls object={object} mode={tool} onMouseUp={onTransformEnd}/>}
-    <OrbitControls makeDefault enabled={tool==='select'} enableDamping dampingFactor={.08}/>
+    <OrbitControls makeDefault enabled={tool==='select'&&!rigEnabled} enableDamping dampingFactor={.08}/>
   </Canvas>
 }
 
@@ -80,6 +92,10 @@ export default function App() {
   const [addOpen,setAddOpen]=useState(false)
   const [activeTab,setActiveTab]=useState('inspector')
   const [cameraSettings,setCameraSettings]=useState({profile:'ARRI Alexa 35',focalLength:35,sensorWidth:27.99,aperture:2.8})
+  const [cameraRig,setCameraRig]=useState({position:[8,6,9],target:[0,0,0]})
+  const [rigEnabled,setRigEnabled]=useState(false)
+  const [keyframes,setKeyframes]=useState([])
+  const [timelinePlaying,setTimelinePlaying]=useState(false)
   const refs=useRef({})
   const inputRef=useRef()
   const modelInputRef=useRef()
@@ -107,8 +123,33 @@ export default function App() {
   }
   const remove=()=>{if(!selectedId||selectedId==='ground')return;setItems(p=>p.filter(x=>x.id!==selectedId));setSelectedId(null)}
   const duplicate=()=>{if(!selected)return;const id=uid();setItems(p=>[...p,{...selected,id,name:selected.name+' Copy',position:[selected.position[0]+1,selected.position[1],selected.position[2]+1]}]);setSelectedId(id)}
+  const addKeyframe=()=>{
+    const frame={id:uid(),label:'Shot '+String(keyframes.length+1).padStart(2,'0'),position:[...cameraRig.position],target:[...cameraRig.target],focalLength:cameraSettings.focalLength}
+    setKeyframes(p=>[...p,frame]);setRigEnabled(true)
+  }
+  const applyKeyframe=frame=>{setRigEnabled(true);setCameraRig({position:[...frame.position],target:[...frame.target]});setCameraSettings(p=>({...p,focalLength:frame.focalLength}))}
+  const moveRig=(axis,amount)=>setCameraRig(p=>({...p,position:p.position.map((v,i)=>i===axis?v+amount:v)}))
+  const aimRig=(axis,amount)=>setCameraRig(p=>({...p,target:p.target.map((v,i)=>i===axis?v+amount:v)}))
+  useEffect(()=>{
+    if(!timelinePlaying||keyframes.length<2){if(timelinePlaying)setTimelinePlaying(false);return}
+    let raf=0,start=null
+    const duration=(keyframes.length-1)*1800
+    const tick=now=>{
+      if(start===null)start=now
+      const progress=Math.min((now-start)/duration,1)*(keyframes.length-1)
+      const index=Math.min(Math.floor(progress),keyframes.length-2)
+      const t=progress-index,a=keyframes[index],b=keyframes[index+1]
+      const mix=(x,y)=>x.map((v,i)=>v+(y[i]-v)*t)
+      setRigEnabled(true)
+      setCameraRig({position:mix(a.position,b.position),target:mix(a.target,b.target)})
+      setCameraSettings(p=>({...p,focalLength:a.focalLength+(b.focalLength-a.focalLength)*t}))
+      if(progress<keyframes.length-1)raf=requestAnimationFrame(tick);else setTimelinePlaying(false)
+    }
+    raf=requestAnimationFrame(tick)
+    return ()=>cancelAnimationFrame(raf)
+  },[timelinePlaying,keyframes])
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.3.0',projectName,items,cameraSettings},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.4.0',projectName,items,cameraSettings,cameraRig,keyframes},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -127,7 +168,7 @@ export default function App() {
   const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
-    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
   const axes=['X','Y','Z']
@@ -157,13 +198,13 @@ export default function App() {
             <ToolButton title="Duplicate" onClick={duplicate}><Copy size={15}/></ToolButton><ToolButton title="Delete" onClick={remove}><Trash2 size={15}/></ToolButton>
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
-        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings}/><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
-        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>Coming in next module</small></div><span>24 FPS　 00:00:00:00</span></div><div className="timeline-empty"><Clapperboard size={18}/> Timeline module follows the asset import milestone.</div></div>
+        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings} cameraRig={cameraRig} rigEnabled={rigEnabled}/><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>{keyframes.length} keyframes</small></div><div className="timeline-actions"><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></div></div><div className="timeline-track">{keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
       </main>
       <aside className="right-panel">
         <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button></div>
         {activeTab==='camera'?<><div className="inspector-object"><div className="object-icon"><Camera/></div><div className="object-meta"><b>Cinematic Camera</b><small>LIVE VIEWPORT LENS</small></div></div>
-          <section className="inspector-section"><div className="section-title">CAMERA PROFILE <i/></div><select className="camera-select" value={cameraSettings.profile} onChange={e=>setCameraSettings(p=>({...p,profile:e.target.value,sensorWidth:e.target.value==='Sony Venice 2'?36:e.target.value==='ARRI Alexa Mini LF'?36.7:27.99}))}><option>ARRI Alexa 35</option><option>ARRI Alexa Mini LF</option><option>Sony Venice 2</option><option>Super 35 Generic</option></select><div className="camera-note">Sensor width: {cameraSettings.sensorWidth.toFixed(2)} mm</div></section>
+          <section className="inspector-section"><div className="section-title">CAMERA RIG <i/></div><button className={'rig-toggle '+(rigEnabled?'enabled':'')} onClick={()=>setRigEnabled(v=>!v)}>{rigEnabled?'RIG CONTROL ON':'ENABLE RIG CONTROL'}</button><div className="rig-buttons"><div><span>DOLLY</span><button onClick={()=>moveRig(2,-.5)}>−</button><button onClick={()=>moveRig(2,.5)}>+</button></div><div><span>TRUCK</span><button onClick={()=>moveRig(0,-.5)}>−</button><button onClick={()=>moveRig(0,.5)}>+</button></div><div><span>PEDESTAL</span><button onClick={()=>moveRig(1,-.5)}>−</button><button onClick={()=>moveRig(1,.5)}>+</button></div></div><div className="rig-buttons"><div><span>PAN</span><button onClick={()=>aimRig(0,-.5)}>−</button><button onClick={()=>aimRig(0,.5)}>+</button></div><div><span>TILT</span><button onClick={()=>aimRig(1,-.5)}>−</button><button onClick={()=>aimRig(1,.5)}>+</button></div><div><span>RESET</span><button onClick={()=>{setCameraRig({position:[8,6,9],target:[0,0,0]});setRigEnabled(true)}}>↺</button></div></div><div className="camera-note">Enable rig control to lock the viewport camera to these controls. Orbit navigation is paused while the rig is active.</div></section><section className="inspector-section"><div className="section-title">CAMERA PROFILE <i/></div><select className="camera-select" value={cameraSettings.profile} onChange={e=>setCameraSettings(p=>({...p,profile:e.target.value,sensorWidth:e.target.value==='Sony Venice 2'?36:e.target.value==='ARRI Alexa Mini LF'?36.7:27.99}))}><option>ARRI Alexa 35</option><option>ARRI Alexa Mini LF</option><option>Sony Venice 2</option><option>Super 35 Generic</option></select><div className="camera-note">Sensor width: {cameraSettings.sensorWidth.toFixed(2)} mm</div></section>
           <section className="inspector-section"><div className="section-title">LENS SETTINGS <i/></div><div className="camera-control"><label>Focal Length</label><div><input type="range" min="18" max="200" step="1" value={cameraSettings.focalLength} onChange={e=>setCameraSettings(p=>({...p,focalLength:Number(e.target.value)}))}/><strong>{cameraSettings.focalLength} mm</strong></div></div><div className="lens-presets">{[18,24,35,50,85,135].map(v=><button className={cameraSettings.focalLength===v?'chosen':''} key={v} onClick={()=>setCameraSettings(p=>({...p,focalLength:v}))}>{v}</button>)}</div><div className="camera-control aperture-control"><label>Aperture (metadata)</label><div><input type="range" min="1.4" max="16" step="0.1" value={cameraSettings.aperture} onChange={e=>setCameraSettings(p=>({...p,aperture:Number(e.target.value)}))}/><strong>f/{cameraSettings.aperture.toFixed(1)}</strong></div></div><div className="camera-note">Aperture is stored in the shot settings. Optical depth-of-field rendering is planned for a later build.</div></section>
           <section className="inspector-section"><div className="section-title">FRAMING <i/></div><div className="data-row"><span>Horizontal FOV</span><code>{(2*Math.atan(cameraSettings.sensorWidth/(2*cameraSettings.focalLength))*180/Math.PI).toFixed(1)}°</code></div><div className="data-row"><span>Lens</span><code>{cameraSettings.focalLength} mm</code></div></section>
         </>:selected?<><div className="inspector-object"><div className="object-icon">{(()=>{const I=kindIcon(selected.kind);return <I/>})()}</div><div className="object-meta"><input value={selected.name} onChange={e=>update('name',null,e.target.value)}/><small>{selected.kind.toUpperCase()} · OBJECT</small></div></div>
@@ -174,7 +215,7 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.3.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.4.0</span></div>
       </aside>
     </div>
     <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
