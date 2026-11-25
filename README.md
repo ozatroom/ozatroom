@@ -1,6 +1,6 @@
 # OZATROOM PREVIS
 
-**Cinematic Previsualization Studio** — browser-based 3D scene builder foundation.
+**Cinematic Previsualization Studio** — browser-based 3D scene builder.
 
 ## Run locally
 Requirements: Node.js 20.19+ or 22.12+.
@@ -18,7 +18,15 @@ npm run build
 npm run preview
 ```
 
-## v0.1.0 — Scene Builder foundation
+## v0.2.0 — GLB Asset Import
+- Import binary glTF (.glb) assets up to 100 MB
+- Imported models appear as selectable Outliner items
+- Imported model transform uses Move / Rotate / Scale gizmos
+- Model size is normalized on import while preserving proportions
+- Imported model data is embedded in the .ozprevis.json project file
+- Reopen saved projects with embedded GLB assets
+
+## v0.1.0 — Scene Builder
 - Three.js viewport through React Three Fiber
 - Perspective orbit navigation, realtime lighting and ground grid
 - Scene hierarchy / Outliner
@@ -27,10 +35,10 @@ npm run preview
 - Translate, rotate and scale gizmos
 - Numeric transform inspector and material color editing
 - Duplicate, delete and visibility toggle
-- Save and load local `.ozprevis.json` project files
+- Save and load local .ozprevis.json project files
 
 ## Roadmap
-1. GLB/glTF asset import and robust selection
+1. Improve asset browser, drag-and-drop and GLTF support
 2. Cinematic camera system: sensor, focal length, focus, DOF and camera rigs
 3. Shot timeline, keyframes and motion paths
 4. Storyboard and shot list
@@ -38,4 +46,4 @@ npm run preview
 
 AI provider credentials must remain on the server and must never be embedded in browser code.
 
-This is an initial development scaffold, not a production release. AI provider integrations, cloud storage, collaboration and final video rendering are not implemented yet.
+**Note:** This is an evolving development build. The GLB importer supports self-contained binary GLB files; standalone .gltf files with external texture/buffer references are not supported yet.

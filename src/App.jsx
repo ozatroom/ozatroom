@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useLoader } from '@react-three/fiber'
+import { Suspense } from 'react'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { Grid, OrbitControls, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 import {
@@ -14,7 +16,24 @@ const starter = [
   { id:'cube_01', name:'Cube 01', kind:'box', position:[0,.8,0], rotation:[0,.35,0], scale:[1.6,1.6,1.6], color:'#b7a18a', visible:true },
   { id:'sphere_01', name:'Sphere 01', kind:'sphere', position:[2.4,.7,-.6], rotation:[0,0,0], scale:[1.35,1.35,1.35], color:'#738a91', visible:true }
 ]
-const kindIcon = k => k==='box' ? Box : k==='sphere' ? Circle : k==='cylinder' ? Cylinder : Grid3X3
+const kindIcon = k => k==='box' || k==='model' ? Box : k==='sphere' ? Circle : k==='cylinder' ? Cylinder : Grid3X3
+
+function ImportedModel({ item, register, onSelect }) {
+  const gltf = useLoader(GLTFLoader, item.assetData)
+  const group = useRef()
+  const scene = useMemo(() => gltf.scene.clone(true), [gltf])
+  const normalizedScale = useMemo(() => {
+    const bounds = new THREE.Box3().setFromObject(scene)
+    const size = bounds.getSize(new THREE.Vector3())
+    const largest = Math.max(size.x, size.y, size.z, 0.001)
+    return 2 / largest
+  }, [scene])
+  return <group ref={node => { group.current = node; register(item.id, node) }}
+    position={item.position} rotation={item.rotation} scale={item.scale} visible={item.visible}
+    onClick={event => { event.stopPropagation(); onSelect(item.id) }}>
+    <group scale={normalizedScale}><primitive object={scene} /></group>
+  </group>
+}
 
 function MeshItem({ item, selected, register, onSelect }) {
   const mesh = useRef()
@@ -57,7 +76,7 @@ export default function App() {
   const [projectName,setProjectName]=useState('Untitled Cinematic')
   const [addOpen,setAddOpen]=useState(false)
   const refs=useRef({})
-  const inputRef=useRef()
+  const inputRef=useRef()\n  const modelInputRef=useRef()
   const selected=items.find(x=>x.id===selectedId)
   const register=useCallback((id,obj)=>{if(obj)refs.current[id]=obj;else delete refs.current[id];window.__ozatroomObjects=refs.current},[])
   const sync=useCallback(()=>setItems(old=>old.map(x=>{const o=refs.current[x.id];return o?{...x,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()}:x})),[])
@@ -86,7 +105,7 @@ export default function App() {
     const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.1.0',projectName,items},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
-  const openFile=file=>{
+  const importModel=file=>{\n    if(!file)return\n    if(!file.name.toLowerCase().endsWith('.glb')){alert('На этом этапе поддерживается импорт .glb. Для .gltf используйте экспорт в GLB.');return}\n    if(file.size>100*1024*1024){alert('Файл превышает лимит 100 MB.');return}\n    const reader=new FileReader()\n    reader.onload=()=>{\n      const id=uid()\n      const item={id,name:file.name.replace(/\\.glb$/i,''),kind:'model',position:[0,0,0],rotation:[0,0,0],scale:[1,1,1],color:'#ffffff',visible:true,assetData:String(reader.result)}\n      setItems(p=>[...p,item]);setSelectedId(id)\n    }\n    reader.onerror=()=>alert('Не удалось прочитать GLB-файл.')\n    reader.readAsDataURL(file)\n  }\n  const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
     reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null)}catch{alert('Invalid OZPREVIS project file')}}
@@ -97,7 +116,7 @@ export default function App() {
     <header className="topbar">
       <div className="brand"><div className="brand-mark">O</div><div><div className="brand-name">OZATROOM <span>PREVIS</span></div><div className="brand-sub">CINEMATIC PREVISUALIZATION</div></div></div>
       <div className="project-title"><i/> <input value={projectName} onChange={e=>setProjectName(e.target.value)}/><ChevronDown size={13}/></div>
-      <div className="top-actions"><button className="top-btn" onClick={()=>inputRef.current.click()}><FolderOpen size={15}/> Open</button><button className="top-btn primary" onClick={save}><Save size={15}/> Save Project</button><div className="avatar">O</div><input ref={inputRef} hidden type="file" accept=".json,.ozprevis.json" onChange={e=>openFile(e.target.files?.[0])}/></div>
+      <div className="top-actions"><button className="top-btn" onClick={()=>modelInputRef.current.click()}><Plus size={15}/> Import GLB</button><button className="top-btn" onClick={()=>inputRef.current.click()}><FolderOpen size={15}/> Open</button><button className="top-btn primary" onClick={save}><Save size={15}/> Save Project</button><div className="avatar">O</div><input ref={inputRef} hidden type="file" accept=".json,.ozprevis.json" onChange={e=>openFile(e.target.files?.[0])}/><input ref={modelInputRef} hidden type="file" accept=".glb,model/gltf-binary" onChange={e=>{importModel(e.target.files?.[0]);e.target.value=""}}/></div>
     </header>
     <div className="workspace">
       <aside className="left-panel">
@@ -119,8 +138,8 @@ export default function App() {
             <ToolButton title="Duplicate" onClick={duplicate}><Copy size={15}/></ToolButton><ToolButton title="Delete" onClick={remove}><Trash2 size={15}/></ToolButton>
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
-        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync}/><div className="viewport-hud"><span>WORLD SPACE</span><span>METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
-        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>Coming in next module</small></div><span>24 FPS　 00:00:00:00</span></div><div className="timeline-empty"><Clapperboard size={18}/> Animation timeline will be added after Scene Builder.</div></div>
+        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync}/><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>Coming in next module</small></div><span>24 FPS　 00:00:00:00</span></div><div className="timeline-empty"><Clapperboard size={18}/> Timeline module follows the asset import milestone.</div></div>
       </main>
       <aside className="right-panel">
         <div className="panel-tabs"><div className="tab active"><Settings2 size={14}/> INSPECTOR</div><div className="tab"><Camera size={14}/> CAMERA</div></div>
