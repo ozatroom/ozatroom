@@ -457,7 +457,7 @@ export default function App() {
   const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
-    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.objectKeyframes))setObjectKeyframes(d.objectKeyframes);if(Number.isFinite(d.playhead))setPlayhead(d.playhead);if(Number.isFinite(d.timelineDuration))setTimelineDuration(d.timelineDuration);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings);if(d.cameraRig)setCameraRig(d.cameraRig);if(d.cameraRigType)setCameraRigType(d.cameraRigType);if(Array.isArray(d.keyframes))setKeyframes(d.keyframes);if(Array.isArray(d.objectKeyframes))setObjectKeyframes(d.objectKeyframes);if(Number.isFinite(d.playhead))setPlayhead(d.playhead);if(Number.isFinite(d.timelineDuration))setTimelineDuration(d.timelineDuration);if(Array.isArray(d.storyboard))setStoryboard(d.storyboard);if(d.renderSettings)setRenderSettings(d.renderSettings)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
   useEffect(()=>{
