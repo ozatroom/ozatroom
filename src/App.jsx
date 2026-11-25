@@ -162,6 +162,7 @@ export default function App() {
   const [units,setUnits]=useState('m')
   const [exportingFrames,setExportingFrames]=useState(false)
   const [autosaveReady,setAutosaveReady]=useState(false)
+  const [historyRevision,setHistoryRevision]=useState(0)
   const [autosaveStatus,setAutosaveStatus]=useState('RESTORING…')
   const historyRef=useRef({past:[],future:[],last:null,ready:false,restoring:false})
   const refs=useRef({})
@@ -193,6 +194,7 @@ export default function App() {
     if(!h.past.length)return
     const current=snapshotProject(), previous=h.past.pop()
     h.future.push(current)
+    setHistoryRevision(v=>v+1)
     applySnapshot(previous)
   }
   const redo=()=>{
@@ -200,6 +202,7 @@ export default function App() {
     if(!h.future.length)return
     const current=snapshotProject(), next=h.future.pop()
     h.past.push(current)
+    setHistoryRevision(v=>v+1)
     applySnapshot(next)
   }
   const canUndo=historyRef.current.past.length>0
@@ -223,7 +226,7 @@ export default function App() {
         setAutosaveStatus('RECOVERED')
       } else setAutosaveStatus('READY')
     }).catch(()=>{if(active)setAutosaveStatus('LOCAL STORAGE UNAVAILABLE')}).finally(()=>{
-      if(active){historyRef.current.last=JSON.stringify(snapshotProject());historyRef.current.ready=true;setAutosaveReady(true)}
+      if(active){historyRef.current.last=JSON.stringify(snapshotProject());historyRef.current.ready=true;setAutosaveReady(true);setHistoryRevision(v=>v+1)}
     })
     return ()=>{active=false}
   },[])
@@ -249,6 +252,7 @@ export default function App() {
       if(h.past.length>60)h.past.shift()
       h.future=[]
       h.last=current
+      setHistoryRevision(v=>v+1)
     },180)
     return ()=>clearTimeout(timer)
   },[projectName,items,cameraSettings,cameraRig,keyframes,objectKeyframes,playhead,timelineDuration,storyboard,renderSettings,timelinePlaying])
@@ -463,7 +467,7 @@ export default function App() {
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
         <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings} cameraRig={cameraRig} rigEnabled={rigEnabled}/><div className={'frame-guide '+(renderSettings.frameGuide?'':'hidden')} style={{aspectRatio:renderSettings.ratio.replace(':',' / '),width:(Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))<1?(82*Number(renderSettings.ratio.split(':')[0])/Number(renderSettings.ratio.split(':')[1]))+'%':'82%'}}><div className={'safe-guide '+(renderSettings.safeGuides?'':'hidden')}></div></div><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
-        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<><button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button><button onClick={()=>setTimelinePlaying(v=>!v)} disabled={objectKeyframes.length<2}>{timelinePlaying?'Pause':'Play'}</button><span>{playhead.toFixed(2)} / {timelineDuration}s</span></>:<><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></>}</div></div><div className="timeline-track">{workspaceMode==='animate'?<><div className="playhead-controls"><label>DURATION <input type="number" min="1" max="60" value={timelineDuration} onChange={e=>setTimelineDuration(Math.max(1,Math.min(60,Number(e.target.value)||1)))}/> SEC</label><input aria-label="Timeline playhead" type="range" min="0" max={timelineDuration} step="0.01" value={Math.min(playhead,timelineDuration)} onChange={e=>{setTimelinePlaying(false);setPlayhead(Number(e.target.value))}}/><span>{playhead.toFixed(2)}s</span></div>{objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, move it, set time and press K</div>:<div className="object-track-list">{[...new Set(objectKeyframes.map(k=>k.objectId))].map(id=>{const track=objectKeyframes.filter(k=>k.objectId===id).sort((a,b)=>a.time-b.time);return <div className="object-track" key={id}><b>{track[0].objectName}</b>{track.map((frame,i)=><div className="object-keyframe-marker" key={frame.id} style={{left:(frame.time/timelineDuration*100)+'%'}}><button title={'Go to '+frame.time.toFixed(2)+'s'} onClick={()=>{setTimelinePlaying(false);setPlayhead(frame.time);setSelectedId(frame.objectId)}}>◆</button><select aria-label="Interpolation" value={frame.interpolation||'linear'} onChange={e=>setObjectKeyframes(p=>p.map(k=>k.id===frame.id?{...k,interpolation:e.target.value}:k))}><option value="linear">Linear</option><option value="easeInOut">Ease</option><option value="hold">Hold</option></select></div>)}</div>})}</div>}</>:keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
+        <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> {workspaceMode==='animate'?'OBJECT ANIMATION':'SHOT TIMELINE'} <small>{workspaceMode==='animate'?objectKeyframes.length:keyframes.length} keyframes</small></div><div className="timeline-actions">{workspaceMode==='animate'?<><button onClick={addObjectKeyframe} disabled={!selected}><Plus size={12}/> Keyframe (K)</button><button onClick={()=>setTimelinePlaying(v=>!v)} disabled={objectKeyframes.length<2}>{timelinePlaying?'Pause':'Play'}</button><span>{playhead.toFixed(2)} / {timelineDuration}s</span></>:<><button onClick={addKeyframe}><Plus size={12}/> Add Keyframe</button><button disabled={keyframes.length<2} onClick={()=>setTimelinePlaying(v=>!v)}>{timelinePlaying?'Pause':'Play'}</button><span>24 FPS</span></>}</div></div><div className="timeline-track">{workspaceMode==='animate'?<><div className="playhead-controls"><label>DURATION <input type="number" min="1" max="60" value={timelineDuration} onChange={e=>setTimelineDuration(Math.max(1,Math.min(60,Number(e.target.value)||1)))}/> SEC</label><input aria-label="Timeline playhead" type="range" min="0" max={timelineDuration} step="0.01" value={Math.min(playhead,timelineDuration)} onChange={e=>{setTimelinePlaying(false);setPlayhead(Number(e.target.value))}}/><span>{playhead.toFixed(2)}s</span></div>{objectKeyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Select an object, move it, set time and press K</div>:<div className="object-track-list">{[...new Set(objectKeyframes.map(k=>k.objectId))].map(id=>{const track=objectKeyframes.filter(k=>k.objectId===id).sort((a,b)=>a.time-b.time);return <div className="object-track" key={id}><b>{track[0].objectName}</b>{track.map((frame,i)=><div className="object-keyframe-marker" key={frame.id} style={{left:(frame.time/timelineDuration*100)+'%'}}><button title={'Go to '+frame.time.toFixed(2)+'s'} onClick={()=>{setTimelinePlaying(false);setPlayhead(frame.time);setSelectedId(frame.objectId)}}>◆</button><select aria-label="Interpolation" value={frame.interpolation||'linear'} onChange={e=>setObjectKeyframes(p=>p.map(k=>k.id===frame.id?{...k,interpolation:e.target.value}:k))}><option value="linear">Linear</option><option value="easeInOut">Ease</option><option value="hold">Hold</option></select><button className="key-delete" title="Delete keyframe" onClick={()=>setObjectKeyframes(p=>p.filter(k=>k.id!==frame.id))}>×</button></div>)}</div>})}</div>}</>:keyframes.length===0?<div className="timeline-empty"><Clapperboard size={18}/> Move the camera, then add your first keyframe</div>:keyframes.map((frame,i)=><button className="keyframe-chip" key={frame.id} onClick={()=>applyKeyframe(frame)}><span>{String(i+1).padStart(2,'0')}</span>{frame.label}<small>{frame.focalLength}mm</small></button>)}</div></div>
       </main>
       <aside className="right-panel">
         <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button><button className={'tab '+(activeTab==='storyboard'?'active':'')} onClick={()=>setActiveTab('storyboard')}><FileText size={14}/> SHOTS</button><button className={'tab '+(activeTab==='render'?'active':'')} onClick={()=>setActiveTab('render')}><MonitorPlay size={14}/> RENDER</button><button className={'tab '+(activeTab==='architecture'?'active':'')} onClick={()=>setActiveTab('architecture')}><Box size={14}/> ARCH</button></div>
