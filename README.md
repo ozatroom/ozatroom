@@ -1,5 +1,11 @@
 # OZATROOM PREVIS
 
+**v1.1.0 — Editing Safety & Recovery**
+- Undo/Redo project history with Ctrl+Z, Ctrl+Y and toolbar controls (up to 60 snapshots)
+- Debounced local autosave in browser IndexedDB and automatic project recovery on next launch
+- Per-object timeline tracks with Linear, Ease In-Out and Hold interpolation selectors
+- Delete individual object keyframes directly from the timeline
+
 **v1.0.0 — Object Animation Timeline**
 - Animate selected objects with transform keyframes recorded at the timeline playhead
 - Scrub the timeline and preview interpolated position, rotation and scale changes
