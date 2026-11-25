@@ -63,3 +63,5 @@
 .safe-guide:before{left:50%;top:0;bottom:0;border-left:1px dashed #d9bd8b33}
 .safe-guide:after{top:50%;left:0;right:0;border-top:1px dashed #d9bd8b33}
 .safe-guide.hidden{display:none}
+
+.arch-tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.arch-tool-grid button{height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid #4a4034;border-radius:4px;background:#211e1a;color:#d8b487;font:8px 'DM Mono';letter-spacing:.5px;cursor:pointer}.arch-tool-grid button:hover{background:#34291f;border-color:#bd9162}.dimension-readout{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.dimension-readout div{padding:8px 5px;border:1px solid #343c44;border-radius:3px;background:#1a2025;display:flex;flex-direction:column;gap:5px;text-align:center}.dimension-readout span{font:8px 'DM Mono';color:#8a949d}.dimension-readout b{font:11px 'DM Mono';color:#d9b184}
