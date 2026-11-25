@@ -49,9 +49,10 @@ function MeshItem({ item, selected, register, onSelect }) {
   </mesh>
 }
 
-function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd}) {
+function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd, cameraSettings}) {
   const object = window.__ozatroomObjects?.[selectedId]
-  return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov:42}} gl={{antialias:true,powerPreference:'high-performance'}}>
+  const fov = 2 * Math.atan(cameraSettings.sensorWidth / (2 * cameraSettings.focalLength)) * 180 / Math.PI
+  return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov}} gl={{antialias:true,powerPreference:'high-performance'}}>
     <color attach="background" args={['#171b20']}/>
     <fog attach="fog" args={['#171b20',22,48]}/>
     <ambientLight intensity={.8}/>
@@ -75,6 +76,8 @@ export default function App() {
   const [tool,setTool]=useState('select')
   const [projectName,setProjectName]=useState('Untitled Cinematic')
   const [addOpen,setAddOpen]=useState(false)
+  const [activeTab,setActiveTab]=useState('inspector')
+  const [cameraSettings,setCameraSettings]=useState({profile:'ARRI Alexa 35',focalLength:35,sensorWidth:27.99,aperture:2.8})
   const refs=useRef({})
   const inputRef=useRef()
   const modelInputRef=useRef()
@@ -103,7 +106,7 @@ export default function App() {
   const remove=()=>{if(!selectedId||selectedId==='ground')return;setItems(p=>p.filter(x=>x.id!==selectedId));setSelectedId(null)}
   const duplicate=()=>{if(!selected)return;const id=uid();setItems(p=>[...p,{...selected,id,name:selected.name+' Copy',position:[selected.position[0]+1,selected.position[1],selected.position[2]+1]}]);setSelectedId(id)}
   const save=()=>{
-    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.1.0',projectName,items},null,2)],{type:'application/json'})
+    const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.3.0',projectName,items,cameraSettings},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
   const importModel=file=>{
@@ -122,7 +125,7 @@ export default function App() {
   const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
-    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null)}catch{alert('Invalid OZPREVIS project file')}}
+    reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null);if(d.cameraSettings)setCameraSettings(d.cameraSettings)}catch{alert('Invalid OZPREVIS project file')}}
     reader.readAsText(file)
   }
   const axes=['X','Y','Z']
@@ -152,12 +155,16 @@ export default function App() {
             <ToolButton title="Duplicate" onClick={duplicate}><Copy size={15}/></ToolButton><ToolButton title="Delete" onClick={remove}><Trash2 size={15}/></ToolButton>
           </div><div className="viewport-label"><i/> PERSPECTIVE <b>·</b> REALTIME</div>
         </div>
-        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync}/><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
+        <div className="viewport"><Viewport items={items} selectedId={selectedId} setSelectedId={setSelectedId} tool={tool} register={register} onTransformEnd={sync} cameraSettings={cameraSettings}/><div className="viewport-hud"><span>WORLD SPACE</span><span>GLB IMPORT · METERS · XYZ</span></div><div className="viewport-bottom"><span>SCENE BUILDER / VIEWPORT</span><span>GPU PREVIEW <i/></span></div></div>
         <div className="bottom-panel"><div className="timeline-head"><div><Film size={14}/> SHOT TIMELINE <small>Coming in next module</small></div><span>24 FPS　 00:00:00:00</span></div><div className="timeline-empty"><Clapperboard size={18}/> Timeline module follows the asset import milestone.</div></div>
       </main>
       <aside className="right-panel">
-        <div className="panel-tabs"><div className="tab active"><Settings2 size={14}/> INSPECTOR</div><div className="tab"><Camera size={14}/> CAMERA</div></div>
-        {selected?<><div className="inspector-object"><div className="object-icon">{(()=>{const I=kindIcon(selected.kind);return <I/>})()}</div><div className="object-meta"><input value={selected.name} onChange={e=>update('name',null,e.target.value)}/><small>{selected.kind.toUpperCase()} · OBJECT</small></div></div>
+        <div className="panel-tabs"><button className={'tab '+(activeTab==='inspector'?'active':'')} onClick={()=>setActiveTab('inspector')}><Settings2 size={14}/> INSPECTOR</button><button className={'tab '+(activeTab==='camera'?'active':'')} onClick={()=>setActiveTab('camera')}><Camera size={14}/> CAMERA</button></div>
+        {activeTab==='camera'?<><div className="inspector-object"><div className="object-icon"><Camera/></div><div className="object-meta"><b>Cinematic Camera</b><small>LIVE VIEWPORT LENS</small></div></div>
+          <section className="inspector-section"><div className="section-title">CAMERA PROFILE <i/></div><select className="camera-select" value={cameraSettings.profile} onChange={e=>setCameraSettings(p=>({...p,profile:e.target.value,sensorWidth:e.target.value==='Sony Venice 2'?36:e.target.value==='ARRI Alexa Mini LF'?36.7:27.99}))}><option>ARRI Alexa 35</option><option>ARRI Alexa Mini LF</option><option>Sony Venice 2</option><option>Super 35 Generic</option></select><div className="camera-note">Sensor width: {cameraSettings.sensorWidth.toFixed(2)} mm</div></section>
+          <section className="inspector-section"><div className="section-title">LENS SETTINGS <i/></div><div className="camera-control"><label>Focal Length</label><div><input type="range" min="18" max="200" step="1" value={cameraSettings.focalLength} onChange={e=>setCameraSettings(p=>({...p,focalLength:Number(e.target.value)}))}/><strong>{cameraSettings.focalLength} mm</strong></div></div><div className="lens-presets">{[18,24,35,50,85,135].map(v=><button className={cameraSettings.focalLength===v?'chosen':''} key={v} onClick={()=>setCameraSettings(p=>({...p,focalLength:v}))}>{v}</button>)}</div><div className="camera-control aperture-control"><label>Aperture (metadata)</label><div><input type="range" min="1.4" max="16" step="0.1" value={cameraSettings.aperture} onChange={e=>setCameraSettings(p=>({...p,aperture:Number(e.target.value)}))}/><strong>f/{cameraSettings.aperture.toFixed(1)}</strong></div></div><div className="camera-note">Aperture is stored in the shot settings. Optical depth-of-field rendering is planned for a later build.</div></section>
+          <section className="inspector-section"><div className="section-title">FRAMING <i/></div><div className="data-row"><span>Horizontal FOV</span><code>{(2*Math.atan(cameraSettings.sensorWidth/(2*cameraSettings.focalLength))*180/Math.PI).toFixed(1)}°</code></div><div className="data-row"><span>Lens</span><code>{cameraSettings.focalLength} mm</code></div></section>
+        </>:selected?<><div className="inspector-object"><div className="object-icon">{(()=>{const I=kindIcon(selected.kind);return <I/>})()}</div><div className="object-meta"><input value={selected.name} onChange={e=>update('name',null,e.target.value)}/><small>{selected.kind.toUpperCase()} · OBJECT</small></div></div>
           <section className="inspector-section"><div className="section-title">TRANSFORM <i/></div>
             {['position','rotation','scale'].map(key=><div className="transform-block" key={key}><div className="transform-label">{key.toUpperCase()} <button onClick={()=>[0,1,2].forEach(i=>update(key,i,key==='scale'?1:0))}>RESET</button></div><div className="vector-inputs">{axes.map((axis,i)=><label key={axis}><span className={'axis-'+axis.toLowerCase()}>{axis}</span><input type="number" step=".1" value={Number(selected[key][i].toFixed(3))} onChange={e=>update(key,i,e.target.value)}/></label>)}</div></div>)}
           </section>
@@ -165,7 +172,7 @@ export default function App() {
           <section className="inspector-section"><div className="section-title">OBJECT DATA <i/></div><div className="data-row"><span>Object ID</span><code>{selected.id}</code></div><div className="data-row"><span>Visibility</span><button className="text-toggle" onClick={()=>setItems(p=>p.map(x=>x.id===selected.id?{...x,visible:!x.visible}:x))}>{selected.visible?'Visible':'Hidden'}</button></div></section>
           <button className="delete-object" onClick={remove}><Trash2 size={14}/> Delete Object</button>
         </>:<div className="empty-inspector"><MousePointer2 size={24}/><b>No object selected</b><span>Select an object in the viewport or Scene Hierarchy.</span></div>}
-        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.1.0</span></div>
+        <div className="right-footer"><Sparkles size={13}/> OZATROOM PREVIS <span>v0.3.0</span></div>
       </aside>
     </div>
     <footer className="statusbar"><div><i/> READY</div><div><span>SCENE: {items.length} OBJECTS</span><span>SELECTED: {selected?.name||'NONE'}</span><span>WEBGL VIEWPORT</span></div><div>BEYOND REALITY.</div></footer>
