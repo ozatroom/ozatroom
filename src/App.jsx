@@ -66,7 +66,7 @@ function CameraRigView({enabled,position,target}) {
 function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd, cameraSettings, cameraRig, rigEnabled}) {
   const object = window.__ozatroomObjects?.[selectedId]
   const fov = 2 * Math.atan(cameraSettings.sensorWidth / (2 * cameraSettings.focalLength)) * 180 / Math.PI
-  return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov}} gl={{antialias:true,powerPreference:'high-performance'}}>
+  return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov}} gl={{antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true}}>
     <CameraLens fov={fov}/><CameraRigView enabled={rigEnabled} position={cameraRig.position} target={cameraRig.target}/><color attach="background" args={['#171b20']}/>
     <fog attach="fog" args={['#171b20',22,48]}/>
     <ambientLight intensity={.8}/>
