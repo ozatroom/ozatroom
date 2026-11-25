@@ -59,7 +59,7 @@ function Viewport({items, selectedId, setSelectedId, tool, register, onTransform
     <directionalLight position={[-6,4,-4]} intensity={.55} color="#8ca4bb"/>
     <Grid args={[40,40]} position={[0,-.035,0]} cellSize={1} cellThickness={.6} cellColor="#46505a"
       sectionSize={5} sectionThickness={1.1} sectionColor="#77818b" fadeDistance={35} fadeStrength={1.5} infiniteGrid/>
-    {items.map(item=><MeshItem key={item.id} item={item} selected={item.id===selectedId} register={register} onSelect={setSelectedId}/>)}
+    {items.map(item=>item.kind==='model' ? <ImportedModel key={item.id} item={item} register={register} onSelect={setSelectedId}/> : <MeshItem key={item.id} item={item} selected={item.id===selectedId} register={register} onSelect={setSelectedId}/>)}
     {object && tool!=='select' && <TransformControls object={object} mode={tool} onMouseUp={onTransformEnd}/>}
     <OrbitControls makeDefault enabled={tool==='select'} enableDamping dampingFactor={.08}/>
   </Canvas>
@@ -76,7 +76,8 @@ export default function App() {
   const [projectName,setProjectName]=useState('Untitled Cinematic')
   const [addOpen,setAddOpen]=useState(false)
   const refs=useRef({})
-  const inputRef=useRef()\n  const modelInputRef=useRef()
+  const inputRef=useRef()
+  const modelInputRef=useRef()
   const selected=items.find(x=>x.id===selectedId)
   const register=useCallback((id,obj)=>{if(obj)refs.current[id]=obj;else delete refs.current[id];window.__ozatroomObjects=refs.current},[])
   const sync=useCallback(()=>setItems(old=>old.map(x=>{const o=refs.current[x.id];return o?{...x,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()}:x})),[])
@@ -105,7 +106,20 @@ export default function App() {
     const blob=new Blob([JSON.stringify({app:'OZATROOM PREVIS',version:'0.1.0',projectName,items},null,2)],{type:'application/json'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(projectName.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'previs')+'.ozprevis.json';a.click();URL.revokeObjectURL(url)
   }
-  const importModel=file=>{\n    if(!file)return\n    if(!file.name.toLowerCase().endsWith('.glb')){alert('На этом этапе поддерживается импорт .glb. Для .gltf используйте экспорт в GLB.');return}\n    if(file.size>100*1024*1024){alert('Файл превышает лимит 100 MB.');return}\n    const reader=new FileReader()\n    reader.onload=()=>{\n      const id=uid()\n      const item={id,name:file.name.replace(/\\.glb$/i,''),kind:'model',position:[0,0,0],rotation:[0,0,0],scale:[1,1,1],color:'#ffffff',visible:true,assetData:String(reader.result)}\n      setItems(p=>[...p,item]);setSelectedId(id)\n    }\n    reader.onerror=()=>alert('Не удалось прочитать GLB-файл.')\n    reader.readAsDataURL(file)\n  }\n  const openFile=file=>{
+  const importModel=file=>{
+    if(!file)return
+    if(!file.name.toLowerCase().endsWith('.glb')){alert('На этом этапе поддерживается импорт .glb. Для .gltf используйте экспорт в GLB.');return}
+    if(file.size>100*1024*1024){alert('Файл превышает лимит 100 MB.');return}
+    const reader=new FileReader()
+    reader.onload=()=>{
+      const id=uid()
+      const item={id,name:file.name.replace(/\\.glb$/i,''),kind:'model',position:[0,0,0],rotation:[0,0,0],scale:[1,1,1],color:'#ffffff',visible:true,assetData:String(reader.result)}
+      setItems(p=>[...p,item]);setSelectedId(id)
+    }
+    reader.onerror=()=>alert('Не удалось прочитать GLB-файл.')
+    reader.readAsDataURL(file)
+  }
+  const openFile=file=>{
     if(!file)return
     const reader=new FileReader()
     reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.items))throw Error();setItems(d.items);setProjectName(d.projectName||'Imported Project');setSelectedId(d.items[0]?.id||null)}catch{alert('Invalid OZPREVIS project file')}}
