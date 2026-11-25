@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { Canvas, useLoader } from '@react-three/fiber'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useLoader, useThree } from '@react-three/fiber'
 import { Suspense } from 'react'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { Grid, OrbitControls, TransformControls } from '@react-three/drei'
@@ -49,11 +49,13 @@ function MeshItem({ item, selected, register, onSelect }) {
   </mesh>
 }
 
+function CameraLens({fov}) { const {camera}=useThree(); useEffect(()=>{camera.fov=fov;camera.updateProjectionMatrix()},[camera,fov]); return null }
+
 function Viewport({items, selectedId, setSelectedId, tool, register, onTransformEnd, cameraSettings}) {
   const object = window.__ozatroomObjects?.[selectedId]
   const fov = 2 * Math.atan(cameraSettings.sensorWidth / (2 * cameraSettings.focalLength)) * 180 / Math.PI
   return <Canvas shadows dpr={[1,1.7]} camera={{position:[8,6,9],fov}} gl={{antialias:true,powerPreference:'high-performance'}}>
-    <color attach="background" args={['#171b20']}/>
+    <CameraLens fov={fov}/><color attach="background" args={['#171b20']}/>
     <fog attach="fog" args={['#171b20',22,48]}/>
     <ambientLight intensity={.8}/>
     <directionalLight position={[5,10,6]} intensity={2.1} castShadow shadow-mapSize={[2048,2048]}/>
