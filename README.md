@@ -147,3 +147,11 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Added one-click camera movement tracks: push-in, pull-out, truck left/right, crane up/down and pan left/right. Each creates editable start/end camera keyframes.
 - Added camera look presets: Cinematic, Portrait, Wide, Telephoto, Documentary and Anamorphic. Presets configure lens/sensor metadata for shot planning.
 - Presets create or update camera settings and keyframes within the current project; they do not claim to simulate physical camera hardware.
+
+
+
+## v1.8.0 — AI Script to 3D Scene (Local Prototype)
+- Added an AI Scene workspace with a chat-style script input and generated prompt panel.
+- Added a local keyword-based blockout builder that creates basic scene objects, a three-shot storyboard and camera keyframes from a written scene description.
+- The generated video prompt can be copied for use in external AI video tools.
+- This release does not call ChatGPT or any external model. A secure server-side GPT API integration is still required for genuine conversational script analysis and robust scene generation.
