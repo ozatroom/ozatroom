@@ -45,3 +45,5 @@ jobs:
         uses: actions/deploy-pages@v4
 
 # v0.4.0 deployment trigger
+
+# Deploy v0.6.0 preview
