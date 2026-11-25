@@ -109,3 +109,52 @@
 }
 .export-video-button:hover:not(:disabled) { background: rgba(214,166,107,.22); }
 .export-video-button:disabled { opacity: .45; cursor: not-allowed; }
+
+
+/* v1.3.0 editable camera motion path */
+.camera-waypoint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+.camera-waypoint-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 5px;
+  background: rgba(255,255,255,.025);
+  padding: 4px 6px;
+}
+.camera-waypoint-row.selected {
+  border-color: rgba(214,166,107,.5);
+  background: rgba(214,166,107,.08);
+}
+.camera-waypoint-row > button:first-child {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  gap: 2px 7px;
+  color: #d8dce0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 3px;
+}
+.camera-waypoint-row b { color: #d6a66b; font-size: 10px; grid-row: span 2; }
+.camera-waypoint-row span { font-size: 11px; }
+.camera-waypoint-row small { color: #87919a; font-size: 9px; }
+.camera-waypoint-row > button:last-child {
+  border: 0;
+  color: #9ba3aa;
+  background: transparent;
+  cursor: pointer;
+  font-size: 17px;
+  padding: 2px 6px;
+}
+.camera-waypoint-row > button:last-child:hover { color: #e38b82; }
+.keyframe-chip.selected { border-color: rgba(214,166,107,.7); color: #e6bd8e; }
