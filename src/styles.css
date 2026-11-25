@@ -11,3 +11,21 @@
 
 /* Cinematic camera inspector */
 .panel-tabs .tab{background:transparent;border-top:0;border-left:0;border-right:0;cursor:pointer}.camera-select{width:100%;height:31px;background:#1a2025;border:1px solid #343c44;border-radius:4px;color:#d4dbe0;padding:0 8px;font-size:10px;outline:none}.camera-note{margin-top:9px;color:#77838d;font-size:9px;line-height:1.5}.camera-control{margin:11px 0}.camera-control>label{display:block;color:#9ca6ae;font-size:10px;margin-bottom:8px}.camera-control>div{display:flex;align-items:center;gap:9px}.camera-control input[type=range]{flex:1;min-width:0;accent-color:#c69a6a}.camera-control strong{width:54px;text-align:right;color:#d9b184;font:10px 'DM Mono'}.lens-presets{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:12px 0 17px}.lens-presets button{height:25px;border:1px solid #343c44;border-radius:3px;background:#1a2025;color:#9da7af;font:9px 'DM Mono';cursor:pointer}.lens-presets button.chosen,.lens-presets button:hover{border-color:#9b7957;background:#302820;color:#e0bd92}.aperture-control{margin-top:16px}
+
+/* v0.4.0 camera rig and shot timeline */
+.rig-toggle{width:100%;height:29px;border:1px solid #514638;border-radius:4px;background:#211d19;color:#c9a77e;font:9px 'DM Mono';letter-spacing:.5px;cursor:pointer}
+.rig-toggle.enabled{background:#314033;border-color:#64836b;color:#b4d2b8}
+.rig-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:9px}
+.rig-buttons>div{display:flex;align-items:center;gap:3px;min-width:0}
+.rig-buttons span{font:7px 'DM Mono';color:#7e8992;flex:1;overflow:hidden}
+.rig-buttons button{width:22px;height:22px;border:1px solid #343c44;border-radius:3px;background:#1a2025;color:#c7d0d7;font:11px 'DM Mono';cursor:pointer}
+.rig-buttons button:hover{border-color:#9b7957;color:#e0bd92}
+.timeline-actions{display:flex;align-items:center;gap:6px}
+.timeline-actions button{display:flex;align-items:center;gap:4px;height:23px;padding:0 8px;border:1px solid #414950;border-radius:3px;background:#1b2025;color:#c5cdd3;font:9px 'DM Mono';cursor:pointer}
+.timeline-actions button:disabled{opacity:.35;cursor:not-allowed}
+.timeline-actions span{margin-left:7px;color:#7f8992;font:9px 'DM Mono'}
+.timeline-track{height:104px;display:flex;align-items:flex-start;gap:8px;padding:17px 13px;overflow-x:auto;background:repeating-linear-gradient(90deg,transparent 0,transparent 47px,#222a30 48px)}
+.timeline-track .timeline-empty{height:65px;width:100%}
+.keyframe-chip{min-width:112px;height:48px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:5px 8px;border:1px solid #594832;border-radius:4px;background:#29231d;color:#ddc09b;font:9px 'DM Mono';cursor:pointer}
+.keyframe-chip span{color:#a98a63;font-size:8px}
+.keyframe-chip small{color:#85919a;font:8px 'DM Mono'}
