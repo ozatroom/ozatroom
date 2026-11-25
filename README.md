@@ -92,3 +92,11 @@ AI provider credentials must remain on the server and must never be embedded in 
 ## GitHub Pages
 
 The `previs` branch is configured for automatic GitHub Pages deployment via GitHub Actions.
+
+
+## v0.9.0 — Workspace Modes
+- Build / Animate / Camera workspace modes with B / A / C shortcuts.
+- Animate mode captures selected object transform keyframes with K and displays object keyframe markers in the timeline.
+- Camera mode opens the camera inspector and enables camera rig controls.
+- Space toggles timeline playback; Delete removes the selected object; W/E/R/Q switch transform tools.
+- Object keyframes are stored in the .ozprevis.json project file. Playback of object animation and interpolation are planned for the next timeline milestone.
