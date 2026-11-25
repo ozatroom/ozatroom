@@ -161,3 +161,13 @@ The `previs` branch is configured for automatic GitHub Pages deployment via GitH
 - Added a paste-in JSON scene workflow that does not require an API connection.
 - ChatGPT can author a structured scene payload; paste it into AI SCENE to create editable 3D blockout objects, storyboard shots and camera keyframes.
 - The previous local keyword blockout remains available as a quick fallback.
+
+
+## v1.9.0 — Animation Engine JSON Import
+
+- Imports per-object transform animation tracks from `animations[]` using object names and timed keyframes.
+- Imports camera motion keyframes from `camera.keyframes[]` and storyboard camera shots.
+- Supports position, rotation, scale, and Linear / Ease In-Out / Hold interpolation.
+- Sets the animation timeline duration and opens Animate mode when object tracks are present.
+- Character movement can be previs-blocked using named proxy objects; skeletal rigs and motion capture are not included.
+- This is transform-based previs, not a physics solver or offline renderer.
