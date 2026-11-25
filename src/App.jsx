@@ -226,7 +226,7 @@ export default function App() {
         setAutosaveStatus('RECOVERED')
       } else setAutosaveStatus('READY')
     }).catch(()=>{if(active)setAutosaveStatus('LOCAL STORAGE UNAVAILABLE')}).finally(()=>{
-      if(active){historyRef.current.last=JSON.stringify(snapshotProject());historyRef.current.ready=true;setAutosaveReady(true);setHistoryRevision(v=>v+1)}
+      if(active){historyRef.current.last=null;historyRef.current.ready=true;setAutosaveReady(true);setHistoryRevision(v=>v+1)}
     })
     return ()=>{active=false}
   },[])
@@ -403,6 +403,9 @@ export default function App() {
   useEffect(()=>{
     const onKeyDown = event => {
       if (event.repeat) return
+      const target = event.target
+      const typing = target?.closest?.('input, textarea, select, [contenteditable="true"], [role="textbox"]')
+      if (typing || target?.isContentEditable) return
       if ((event.ctrlKey || event.metaKey) && !event.altKey) {
         const command=event.code
         if(command==='KeyZ'){event.preventDefault();if(event.shiftKey)redo();else undo();return}
@@ -410,9 +413,6 @@ export default function App() {
         return
       }
       if (event.ctrlKey || event.metaKey || event.altKey) return
-      const target = event.target
-      const typing = target?.closest?.('input, textarea, select, [contenteditable="true"], [role="textbox"]')
-      if (typing || target?.isContentEditable) return
 
       // Use physical key codes so shortcuts work with both Latin and Cyrillic layouts.
       const code = event.code
