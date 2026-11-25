@@ -170,3 +170,7 @@
 
 /* v1.6.0 cinematic camera tools */
 .aperture-control + .camera-note{margin-top:5px}.camera-control input[type=range]{cursor:pointer}.camera-control strong{font-variant-numeric:tabular-nums}
+
+
+/* v1.7.0 cinematic camera preset grids */
+.camera-preset-heading{margin:13px 0 7px;color:#8f9aa3;font:8px 'DM Mono';letter-spacing:.9px}.camera-move-grid,.camera-look-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:8px}.camera-move-grid button,.camera-look-grid button{height:27px;border:1px solid #343c44;border-radius:3px;background:#1a2025;color:#aeb8c0;font:8px 'DM Mono';letter-spacing:.25px;cursor:pointer}.camera-move-grid button:hover,.camera-look-grid button:hover{border-color:#a78258;background:#302820;color:#e2bd91}.camera-look-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
